@@ -84,8 +84,10 @@ test('drafts survive reload and missing elements are marked', async ({ cobroPage
 test('reload strategy reloads the page on done', async ({ cobroPage: page, bridge }) => {
   await page.goto('http://127.0.0.1:4173/basic.html');
   await expect.poll(() => bridge.core.session.detected).toBe('reload');
-  const loaded = page.waitForEvent('load');
+  await page.evaluate(() => { (window as unknown as { __cobroPreReload: boolean }).__cobroPreReload = true; });
   bridge.done({ summary: 'x', selectors: [], changedFiles: [] });
-  await loaded;
+  // load 이벤트를 제때 못 붙잡는 경쟁을 피한다 — 마커는 새 문서가 이전 문서를 대체할 때만 사라진다.
+  // 내비게이션 중 실행 컨텍스트 파괴 오류는 .catch로 흡수한다.
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __cobroPreReload?: boolean }).__cobroPreReload === undefined).catch(() => false), { timeout: 15_000 }).toBe(true);
   await expect.poll(() => page.evaluate(() => performance.getEntriesByType('navigation').length > 0 && (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming).type)).toBe('reload');
 });

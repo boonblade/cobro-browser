@@ -20,6 +20,7 @@ async function waitForVite(url: string, timeoutMs = 20_000) {
 test.beforeAll(async () => {
   // --host 127.0.0.1: vite 기본값은 'localhost'를 ::1(IPv6)로만 바인딩해 4173 픽스처(127.0.0.1)와 어긋난다
   vite = spawn('npx', ['vite', '--port', '4174', '--strictPort', '--host', '127.0.0.1'], { cwd: 'test/fixtures/vite-app', shell: true, stdio: 'ignore' });
+  vite.on('error', () => {}); // 비동기 spawn 오류가 러너를 죽이지 않도록 — 실패는 waitForVite의 타임아웃으로 드러난다
   await waitForVite('http://127.0.0.1:4174/');
 });
 
