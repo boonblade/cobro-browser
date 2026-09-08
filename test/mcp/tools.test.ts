@@ -26,7 +26,7 @@ beforeEach(async () => {
     isAlive: () => state.alive,
     wasLaunched: () => state.launched,
   };
-  const server = createMcpServer({ core, browser, shotPath: (id) => `/s/${id}.png`, done: (info) => core.done(info), defaultWaitSec: 1 });
+  const server = createMcpServer({ core, browser, shotPath: (id) => `/s/${id}.png`, manualShotPath: (n) => `/s/manual/${n}.png`, done: (info) => core.done(info), defaultWaitSec: 1 });
   const [ct, st] = InMemoryTransport.createLinkedPair();
   client = new Client({ name: 't', version: '0' });
   await server.connect(st); await client.connect(ct);
@@ -90,7 +90,8 @@ describe('mcp tools', () => {
   });
   it('screenshot returns path and passes selector through; close closes browser', async () => {
     const r = await call('screenshot');
-    expect(r.path).toMatch(/\.png$/);
+    expect(r.path).toMatch(/^\/s\/manual\/manual-\d+\.png$/); // 배치 샷과 분리된 폴더
+
     expect(shots.at(-1)!.selector).toBeUndefined();
     const r2 = await call('screenshot', { selector: '#target' });
     expect(r2.path).toMatch(/\.png$/);

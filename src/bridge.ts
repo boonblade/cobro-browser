@@ -12,18 +12,39 @@ export async function createBridge(opts: { store: Store; token: string; screensh
     token: opts.token,
     onConnect: (reply) => reply({ type: 'state', session: core.session }),
     onMessage: (msg) => {
+      // 페이지에서 온 메시지는 전부 데이터다 — 쓰기 전에 형태를 확인하고, 어긋나면 한 줄 남기고 버린다
+      const bad = (why: string) => console.error(`[cobro] bridge: ${msg.type} 메시지를 무시한다 — ${why}`);
       switch (msg.type) {
-        case 'page': core.setPage(msg.page, msg.detected); break;
-        case 'draft': core.setDrafts(msg.batches); break;
-        case 'redo': core.redo(msg.batchId); break;
-        case 'resolved': core.markResolved(msg.batchId, msg.index, msg.missing); break;
+        case 'page':
+          if (!msg.page || typeof msg.page.url !== 'string') return bad('page.url이 없다');
+          core.setPage(msg.page, msg.detected); break;
+        case 'draft':
+          if (!Array.isArray(msg.batches)) return bad('batches가 배열이 아니다');
+          core.setDrafts(msg.batches); break;
+        case 'redo':
+          if (typeof msg.batchId !== 'string') return bad('batchId가 문자열이 아니다');
+          core.redo(msg.batchId); break;
+        case 'resolved':
+          if (typeof msg.batchId !== 'string') return bad('batchId가 문자열이 아니다');
+          core.markResolved(msg.batchId, msg.index, msg.missing); break;
         case 'send': {
+          if (!Array.isArray(msg.batchIds) || !msg.page || typeof msg.page.url !== 'string') return bad('batchIds 배열이나 page.url이 없다');
           const batches = core.markSent(msg.batchIds, msg.page);
           void (async () => {
-            for (const b of batches) {
-              try { const p = await opts.screenshot?.(b, msg.page); if (p) { b.screenshot = p; } } catch (e) { console.error('[cobro] screenshot failed', e); }
+            // 무엇이 던지든 wait는 반드시 풀어준다 — 스크린샷·콘솔 없이라도 최소 페이로드를 배달한다
+            try {
+              for (const b of batches) {
+                try { const p = await opts.screenshot?.(b, msg.page); if (p) core.setScreenshot(b.id, p); } catch (e) { console.error('[cobro] screenshot failed', (e as Error).message); }
+              }
+              core.deliver(buildPayload({ page: msg.page, batches, console: opts.consoleEntries?.() ?? [], refreshStrategy: core.effectiveStrategy() }));
+            } catch (e) {
+              console.error('[cobro] send 처리 실패 — 최소 페이로드로 배달한다', (e as Error).message);
+              core.deliver({
+                origin: 'human', sentAt: new Date().toISOString(), page: msg.page,
+                batches: batches.map((b) => ({ id: b.id, note: b.note, elements: b.elements })),
+                console: [], refreshStrategy: core.effectiveStrategy(),
+              });
             }
-            core.deliver(buildPayload({ page: msg.page, batches, console: opts.consoleEntries?.() ?? [], refreshStrategy: core.effectiveStrategy() }));
           })();
           break;
         }

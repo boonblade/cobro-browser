@@ -56,7 +56,7 @@ if (fixed) bridge.core.setStrategy(fixed);
 launcher = new BrowserLauncher({ overlaySource, port: bridge.port, token, profileDir, headless: process.env.COBRO_HEADLESS === '1' });
 
 const mcp = createMcpServer({
-  core: bridge.core, browser: launcher, done: (info) => bridge.done(info), shotPath: (id) => store.shotPath(id), defaultWaitSec, tickMs,
+  core: bridge.core, browser: launcher, done: (info) => bridge.done(info), shotPath: (id) => store.shotPath(id), manualShotPath: (n) => store.manualShotPath(n), defaultWaitSec, tickMs,
   onClose: async () => { /* 브라우저만 닫는다. 프로세스는 호스트가 관리 */ },
 });
 await mcp.connect(new StdioServerTransport());

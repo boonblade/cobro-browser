@@ -31,7 +31,9 @@ export class ChannelServer {
             return;
           }
           if (msg?.type === 'hello') return;
-          this.opts.onMessage(msg as Routed, reply);
+          // 핸들러가 던져도 프로세스를 죽이지 않는다 — 소켓은 열린 채로 다음 메시지를 계속 받는다
+          try { this.opts.onMessage(msg as Routed, reply); }
+          catch (e) { console.error('[cobro] channel: handler failed', (e as Error).message); }
         });
         ws.on('close', () => { clearTimeout(authTimer); this.authed.delete(ws); });
         ws.on('error', () => { /* close가 뒤따른다 */ });

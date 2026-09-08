@@ -40,6 +40,11 @@ export class SessionCore extends EventEmitter {
     this.commit();
     return sent;
   }
+  setScreenshot(batchId: string, path: string): void {
+    const b = this.s.batches.find((x) => x.id === batchId);
+    if (!b) return;
+    b.screenshot = path; this.commit();
+  }
   deliver(payload: Payload, extra: { browserRestarted?: boolean } = {}): void {
     const item = { payload, ...extra };
     if (this.waiter) { const w = this.waiter; this.waiter = null; w.resolve({ status: 'sent', ...item }); }

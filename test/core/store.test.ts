@@ -35,10 +35,20 @@ describe('Store', () => {
       const mtime = new Date(baseTime + i * 1000);
       utimesSync(s.shotPath(id), mtime, mtime);
     }
+    // keep 대상은 예산(max)에 산입하지 않는다 → d(무조건) + 나머지 중 최신 2개(c, b) = 3개
     s.pruneShots(['d'], 2);
-    const left = readdirSync(join(dir, 'shots')).sort();
-    expect(left).toHaveLength(2);
-    expect(left).toContain('d.png');
+    const left = readdirSync(join(dir, 'shots')).filter((f) => f.endsWith('.png')).sort();
+    expect(left).toEqual(['b.png', 'c.png', 'd.png']);
     expect(existsSync(s.shotPath('a'))).toBe(false);
+  });
+  it('manualShotPath lives under shots/manual/ and survives pruning', () => {
+    const s = new Store(dir);
+    const manual = s.manualShotPath('manual-123');
+    expect(manual).toBe(join(dir, 'shots', 'manual', 'manual-123.png'));
+    writeFileSync(manual, 'x');
+    for (const id of ['a', 'b', 'c']) writeFileSync(s.shotPath(id), 'x');
+    s.pruneShots([], 1);
+    expect(existsSync(manual)).toBe(true); // 하위 폴더는 prune 대상이 아니다
+    expect(readdirSync(join(dir, 'shots')).filter((f) => f.endsWith('.png'))).toHaveLength(1);
   });
 });

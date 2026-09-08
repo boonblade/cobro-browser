@@ -74,6 +74,11 @@ describe('SessionCore', () => {
     expect(clone!.id).not.toBe('1');
     expect(core.session.batches).toHaveLength(2);
   });
+  it('setScreenshot persists the path so a fresh core sees it', () => {
+    core.setDrafts([draft('1')]);
+    core.setScreenshot('1', '/shots/1.png');
+    expect(new SessionCore(store).session.batches[0]!.screenshot).toBe('/shots/1.png');
+  });
   it('effectiveStrategy prefers fixed over detected over reload', () => {
     expect(core.effectiveStrategy()).toBe('reload');
     core.setPage(page, 'none');

@@ -13,7 +13,7 @@ export interface BrowserLike {
 
 const text = (v: unknown) => ({ content: [{ type: 'text' as const, text: JSON.stringify(v) }] });
 
-export function createMcpServer(deps: { core: SessionCore; browser: BrowserLike; done(info: DoneInfo): Batch[]; shotPath(id: string): string; defaultWaitSec?: number; tickMs?: number; onClose?: () => Promise<void> }): McpServer {
+export function createMcpServer(deps: { core: SessionCore; browser: BrowserLike; done(info: DoneInfo): Batch[]; shotPath(id: string): string; manualShotPath(name: string): string; defaultWaitSec?: number; tickMs?: number; onClose?: () => Promise<void> }): McpServer {
   const { core, browser } = deps;
   const server = new McpServer({ name: 'cobro-browser', version: '0.1.0' });
   let restartedPending = false;
@@ -64,7 +64,7 @@ export function createMcpServer(deps: { core: SessionCore; browser: BrowserLike;
   server.registerTool('screenshot', {
     description: '현재 화면을 PNG 파일로 저장하고 경로를 돌려준다. 이미지는 대화에 넣지 않는다.',
     inputSchema: { selector: z.string().optional().describe('이 선택자로 찾은 첫 요소 주변만 잘라낸다. 생략 시 뷰포트') },
-  }, async ({ selector }) => text({ path: await browser.screenshot({ selector, outPath: deps.shotPath('manual-' + Date.now()) }) }));
+  }, async ({ selector }) => text({ path: await browser.screenshot({ selector, outPath: deps.manualShotPath('manual-' + Date.now()) }) }));
 
   server.registerTool('close', { description: '브라우저를 닫고 세션을 정리한다.', inputSchema: {} },
     async () => {

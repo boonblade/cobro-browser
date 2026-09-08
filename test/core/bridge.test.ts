@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import WebSocket from 'ws';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -29,6 +29,43 @@ describe('createBridge', () => {
     await new Promise((r) => setTimeout(r, 50));
     expect(msgs.some((m) => (m as { type: string }).type === 'done')).toBe(true);
     expect(b.core.session.batches[0]!.status).toBe('done');
+    ws.close();
+  });
+
+  it('ignores a malformed draft and still delivers a later valid send', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    b = await createBridge({ store: new Store(mkdtempSync(join(tmpdir(), 'cobro-'))), token: 't' });
+    const ws = new WebSocket(`ws://127.0.0.1:${b.port}`);
+    await new Promise((r) => ws.once('open', r));
+    ws.send(JSON.stringify({ type: 'hello', token: 't' }));
+    ws.send(JSON.stringify({ type: 'draft', batches: null })); // 형태가 깨진 메시지 — 무시되어야 한다
+    ws.send(JSON.stringify({ type: 'send', batchIds: 'nope', page })); // 이것도
+    ws.send(JSON.stringify({ type: 'draft', batches: [{ id: 'b1', note: '줄여줘', elements: [el], status: 'draft', createdAt: 't' }] }));
+    const waiting = b.core.wait(5000);
+    ws.send(JSON.stringify({ type: 'send', batchIds: ['b1'], page }));
+    await expect(waiting).resolves.toMatchObject({ status: 'sent', payload: { batches: [{ id: 'b1' }] } });
+    err.mockRestore();
+    ws.close();
+  });
+
+  it('resolves wait even when payload building throws', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    b = await createBridge({
+      store: new Store(mkdtempSync(join(tmpdir(), 'cobro-'))), token: 't',
+      consoleEntries: () => { throw new Error('console boom'); },
+    });
+    const ws = new WebSocket(`ws://127.0.0.1:${b.port}`);
+    await new Promise((r) => ws.once('open', r));
+    ws.send(JSON.stringify({ type: 'hello', token: 't' }));
+    ws.send(JSON.stringify({ type: 'draft', batches: [{ id: 'b2', note: 'n', elements: [el], status: 'draft', createdAt: 't' }] }));
+    const waiting = b.core.wait(5000);
+    ws.send(JSON.stringify({ type: 'send', batchIds: ['b2'], page }));
+    const r = await waiting;
+    expect(r.status).toBe('sent');
+    if (r.status !== 'sent') return;
+    expect(r.payload.batches.map((x) => x.id)).toEqual(['b2']);
+    expect(r.payload.console).toEqual([]);
+    err.mockRestore();
     ws.close();
   });
 });

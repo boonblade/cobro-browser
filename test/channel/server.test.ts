@@ -43,6 +43,23 @@ describe('ChannelServer', () => {
     expect(await p).toEqual({ type: 'error', message: 'all' });
     expect(srv.clientCount()).toBe(1);
   });
+  it('a throwing onMessage does not kill the server: the socket stays open and the next message routes', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const seen: string[] = [];
+    const onMessage = vi.fn((m: { type: string; batchId?: string }) => { seen.push(m.batchId!); if (seen.length === 1) throw new Error('boom'); });
+    srv = new ChannelServer({ token: 'good', onMessage });
+    const port = await srv.listen();
+    const ws = await open(port);
+    ws.send(JSON.stringify({ type: 'hello', token: 'good' }));
+    ws.send(JSON.stringify({ type: 'redo', batchId: 'one' }));
+    ws.send(JSON.stringify({ type: 'redo', batchId: 'two' }));
+    await vi.waitFor(() => expect(seen).toEqual(['one', 'two']));
+    expect(ws.readyState).toBe(WebSocket.OPEN);
+    expect(srv.clientCount()).toBe(1);
+    expect(err).toHaveBeenCalledWith('[cobro] channel: handler failed', 'boom');
+    err.mockRestore();
+    ws.close();
+  });
   it('closes an idle unauthenticated socket with 4001 after authTimeoutMs', async () => {
     srv = new ChannelServer({ token: 'good', onMessage: vi.fn(), authTimeoutMs: 50 });
     const port = await srv.listen();
