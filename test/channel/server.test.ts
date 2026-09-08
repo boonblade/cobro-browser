@@ -43,4 +43,10 @@ describe('ChannelServer', () => {
     expect(await p).toEqual({ type: 'error', message: 'all' });
     expect(srv.clientCount()).toBe(1);
   });
+  it('closes an idle unauthenticated socket with 4001 after authTimeoutMs', async () => {
+    srv = new ChannelServer({ token: 'good', onMessage: vi.fn(), authTimeoutMs: 50 });
+    const port = await srv.listen();
+    const ws = await open(port);
+    expect(await closed(ws)).toBe(4001);
+  });
 });

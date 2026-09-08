@@ -7,7 +7,7 @@ type Reply = (m: ServerMsg) => void;
 export class ChannelServer {
   private wss: WebSocketServer | null = null;
   private authed = new Set<WebSocket>();
-  constructor(private readonly opts: { token: string; onMessage: (msg: Routed, reply: Reply) => void; onConnect?: (reply: Reply) => void }) {}
+  constructor(private readonly opts: { token: string; onMessage: (msg: Routed, reply: Reply) => void; onConnect?: (reply: Reply) => void; authTimeoutMs?: number }) {}
 
   listen(): Promise<number> {
     return new Promise((resolve, reject) => {
@@ -20,13 +20,14 @@ export class ChannelServer {
       });
       wss.on('connection', (ws) => {
         const reply: Reply = (m) => { if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(m)); };
-        const authTimer = setTimeout(() => { if (!this.authed.has(ws)) ws.close(4001, 'auth timeout'); }, 3000);
+        const authTimer = setTimeout(() => { if (!this.authed.has(ws)) { console.error('[cobro] channel: unauthorized connection closed (auth timeout)'); ws.close(4001, 'auth timeout'); } }, this.opts.authTimeoutMs ?? 3000);
+        authTimer.unref();
         ws.on('message', (data) => {
           let msg: OverlayMsg;
           try { msg = JSON.parse(data.toString()) as OverlayMsg; } catch { return; }
           if (!this.authed.has(ws)) {
             if (msg?.type === 'hello' && msg.token === this.opts.token) { clearTimeout(authTimer); this.authed.add(ws); this.opts.onConnect?.(reply); }
-            else ws.close(4001, 'unauthorized');
+            else { console.error('[cobro] channel: unauthorized connection closed (invalid auth message)'); ws.close(4001, 'unauthorized'); }
             return;
           }
           if (msg?.type === 'hello') return;
