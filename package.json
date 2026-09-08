@@ -4,9 +4,11 @@
   "private": true,
   "type": "module",
   "bin": { "cobro-browser": "dist/server.js" },
+  "files": ["dist", "skills", "README.md"],
   "engines": { "node": ">=20" },
   "scripts": {
     "build": "node scripts/build.mjs",
+    "prepare": "npm run build",
     "check": "tsc --noEmit && eslint .",
     "test": "vitest run",
     "fixtures:install": "npm ci --prefix test/fixtures/vite-app",

@@ -10,7 +10,25 @@
 
 ## 설치
 
+### ① 사용자 설치(권장)
+
 ```bash
+claude mcp add -s user cobro-browser -- npx -y github:boonblade/cobro-browser
+```
+
+소스는 비공개 GitHub 저장소에 있다. 설치하려면 이 저장소에 대한 접근 권한(`gh auth login` 또는 SSH 키 등록)이 먼저 필요하다. `npx`가 설치 시 `prepare` 훅으로 자동 빌드한다.
+
+WebKit(Safari 엔진)을 쓰려면 등록 명령에 `-e COBRO_BROWSER=webkit`을 추가한다.
+
+다른 호스트는 같은 패키지(`npx -y github:boonblade/cobro-browser`)를 stdio MCP 서버로 등록한다. 서버는 호스트가 실행하고, 호스트가 stdio를 닫으면 브라우저까지 함께 정리된다.
+
+스킬 설치: `skills/claude-code/SKILL.md`(이름 `cobro`)를 호스트의 스킬 경로(예: `~/.claude/skills/cobro/SKILL.md`)에 두면 `/cobro`로 부를 수 있다.
+
+### ② 개발자 설치
+
+```bash
+git clone <저장소>
+cd cobro-browser
 npm i
 npm run build
 ```
@@ -20,6 +38,8 @@ Chrome 또는 Edge가 필요하다. 둘 다 없으면 `npx playwright-core insta
 WebKit(Safari 엔진) 검증용으로 쓰려면 `npx playwright-core install webkit` 후 `COBRO_BROWSER=webkit`.
 
 e2e(`npm run e2e`)는 Vite 호환성 픽스처를 쓴다. `e2e` 스크립트가 `npm run fixtures:install`(= `npm ci --prefix test/fixtures/vite-app`)을 먼저 돌려 알아서 채워 넣는다(이미 설치돼 있으면 금방 끝난다). 픽스처의 `node_modules`는 커밋하지 않는다.
+
+등록 절차는 아래 「호스트 등록」 절을 따른다(로컬 절대경로로 등록).
 
 ## 호스트 등록
 
