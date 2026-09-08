@@ -2,3 +2,4 @@
 .agents-work/
 screenshots/
 node_modules/
+dist/

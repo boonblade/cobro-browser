@@ -7,7 +7,7 @@ export interface BrowserLike { open(url: string): Promise<{ title: string; resta
 
 const text = (v: unknown) => ({ content: [{ type: 'text' as const, text: JSON.stringify(v) }] });
 
-export function createMcpServer(deps: { core: SessionCore; browser: BrowserLike; done(info: DoneInfo): Batch[]; shotPath(id: string): string; defaultWaitSec?: number; onClose?: () => Promise<void> }): McpServer {
+export function createMcpServer(deps: { core: SessionCore; browser: BrowserLike; done(info: DoneInfo): Batch[]; shotPath(id: string): string; defaultWaitSec?: number; tickMs?: number; onClose?: () => Promise<void> }): McpServer {
   const { core, browser } = deps;
   const server = new McpServer({ name: 'cobro-browser', version: '0.1.0' });
   let restartedPending = false;
@@ -34,7 +34,7 @@ export function createMcpServer(deps: { core: SessionCore; browser: BrowserLike;
       } catch (e) {
         console.error('[cobro] progress notification failed', (e as Error).message);
       }
-    }, { signal: extra.signal });
+    }, { tickMs: deps.tickMs, signal: extra.signal });
     if (result.status === 'sent' && restartedPending) { result.browserRestarted = true; restartedPending = false; }
     return text(result);
   });
