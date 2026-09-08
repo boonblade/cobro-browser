@@ -79,6 +79,10 @@ export function createUI(h: UIHandlers) {
 
   function render(vm: ViewModel) {
     lastVm = vm;
+    // panel을 통째로 다시 그리므로 textarea가 분리되면서 포커스·캐럿이 날아간다(디바운스된 draft 왕복마다 발생) → 복원
+    const active = root.activeElement;
+    const wasTa = active instanceof HTMLTextAreaElement ? active : null;
+    const sel: [number, number] | null = wasTa ? [wasTa.selectionStart, wasTa.selectionEnd] : null;
     selectBtn.classList.toggle('on', vm.selecting);
     status.textContent = vm.connected ? STATUS_TEXT[vm.agent.status](vm.agent.text) + (vm.strategy ? ` · 갱신: ${vm.strategy}` : '') : '연결 끊김 — 재연결 중';
     status.classList.toggle('off', !vm.connected);
@@ -125,6 +129,8 @@ export function createUI(h: UIHandlers) {
       panel.append(hist);
     }
     for (const id of [...textareas.keys()]) if (!vm.drafts.some((b) => b.id === id)) textareas.delete(id);
+    // 다시 붙은 textarea가 아까 그 textarea면(= 현재 배치의 것) 포커스와 선택 범위를 되돌린다
+    if (wasTa && sel && wasTa.isConnected) { wasTa.focus(); wasTa.setSelectionRange(sel[0], sel[1]); }
   }
   function flash(selectors: string[]) {
     for (const s of selectors) {

@@ -79,9 +79,15 @@ declare const __COBRO_TOKEN__: string;
     const onMessage = (m: ServerMsg) => {
       if (m.type === 'state') {
         session = m.session;
+        // 서버가 이미 draft에서 넘긴(sent/done/unanswered) 배치는 로컬 draft에서 지운다.
+        // 없으면 send 직후 도착하는 첫 state('draft'로 커밋된 상태)가 방금 보낸 배치를 좀비 draft로 되살린다.
+        const nonDraft = new Set(m.session.batches.filter((b) => b.status !== 'draft').map((b) => b.id));
         const serverDrafts = m.session.batches.filter((b) => b.status === 'draft');
         if (drafts === null) { drafts = serverDrafts.map(resolveDraft); current = drafts[drafts.length - 1]?.id ?? null; }
-        else for (const b of serverDrafts) if (!drafts.some((d) => d.id === b.id)) { drafts.push(resolveDraft(b)); current = b.id; } // redo 복제본 합류
+        else {
+          drafts = drafts.filter((d) => !nonDraft.has(d.id));
+          for (const b of serverDrafts) if (!nonDraft.has(b.id) && !drafts.some((d) => d.id === b.id)) { drafts.push(resolveDraft(b)); current = b.id; } // redo 복제본 합류
+        }
         render();
       } else if (m.type === 'done') {
         ui.flash(m.info.selectors);

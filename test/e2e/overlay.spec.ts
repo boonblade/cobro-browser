@@ -15,6 +15,7 @@ test('select → note → Send arrives in core.wait with selector, then done fla
   expect(r.payload.batches[0]).toMatchObject({ note: '버튼 작게', elements: [{ selector: '#target', tag: 'button' }] });
   expect(r.payload.page.url).toContain('basic.html');
   await expect(page.locator(`${HOST} .status`)).toContainText('전송됨');
+  await expect(page.locator(`${HOST} .els`)).toHaveCount(0); // 보낸 배치가 좀비 draft로 되살아나면 안 된다
   bridge.done({ summary: '폰트 12px', selectors: ['#target'], changedFiles: ['x.tsx'] });
   await expect(page.locator(`${HOST} .status`)).toContainText('완료');
   await expect.poll(() => page.evaluate(() => (window as unknown as { __doneEvents: unknown[] }).__doneEvents.length)).toBe(1);
@@ -27,6 +28,15 @@ test('textarea keeps focus and input under document focusin + window capture foc
   await page.keyboard.type('hello');
   await expect(page.locator(`${HOST} textarea`)).toHaveValue('hello');
   await expect(page.locator('#dlgInput')).toHaveValue('');
+});
+
+test('typing keeps focus and caret across the debounced draft round trip', async ({ cobroPage: page }) => {
+  await page.goto('http://127.0.0.1:4173/basic.html');
+  await selectAt(page, '#target');
+  await page.keyboard.type('앞');
+  await page.waitForTimeout(600); // 디바운스(300ms) 후 draft 전송 → 서버 state 브로드캐스트 → render
+  await page.keyboard.type('뒤');
+  await expect(page.locator(`${HOST} textarea`)).toHaveValue('앞뒤');
 });
 
 test('clicking through the glass does not close a click-outside dropdown', async ({ cobroPage: page }) => {
