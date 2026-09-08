@@ -46,6 +46,9 @@ export class SessionCore extends EventEmitter {
     else this.queue.push(item);
   }
   wait(timeoutMs: number, onTick?: (elapsedMs: number) => void | Promise<void>, opts: { tickMs?: number; signal?: AbortSignal } = {}): Promise<WaitResult> {
+    // 두 번째 wait()가 첫 번째보다 먼저 오면(백그라운드 재호출 등) 이전 대기자를 pending으로
+    // 즉시 해소하고(타이머·abort 리스너 정리 포함) 고아로 남기지 않는다. 최신 호출만 살아있다.
+    if (this.waiter) { const prev = this.waiter; this.waiter = null; prev.resolve({ status: 'pending' }); }
     const queued = this.queue.shift();
     if (queued) return Promise.resolve({ status: 'sent', ...queued });
     if (this.s.agent.status !== 'sent') { this.s.agent = { status: 'waiting', text: '' }; this.commit(); }

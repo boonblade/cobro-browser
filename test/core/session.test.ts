@@ -86,4 +86,11 @@ describe('SessionCore', () => {
     core.setDrafts([draft('1')]); core.setAgentText('x');
     expect(fn).toHaveBeenCalledTimes(2);
   });
+  it('a second wait supersedes the first: first resolves pending, second gets the payload', async () => {
+    const first = core.wait(60_000);
+    const second = core.wait(60_000);
+    await expect(first).resolves.toEqual({ status: 'pending' });
+    core.deliver(payloadOf(['z']));
+    await expect(second).resolves.toMatchObject({ status: 'sent', payload: { batches: [{ id: 'z' }] } });
+  });
 });
