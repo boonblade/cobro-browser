@@ -1,8 +1,13 @@
-import { chromium, type BrowserContext, type Page } from 'playwright-core';
+import { chromium, webkit, firefox, type BrowserContext, type Page } from 'playwright-core';
 import { dedupeConsole } from '../core/payload.js';
 import type { ConsoleEntry, Rect } from '../core/types.js';
 
-const INSTALL_HINT = 'Chrome 또는 Edge를 찾지 못했습니다. Chrome을 설치하거나 COBRO_BROWSER_CHANNEL(chrome|msedge|chromium)을 지정하세요. 번들 Chromium: npx playwright-core install chromium';
+const INSTALL_HINT = 'Chrome 또는 Edge를 찾지 못했습니다. Chrome을 설치하거나 COBRO_BROWSER_CHANNEL(chrome|msedge|chromium)을 지정하세요. 번들 Chromium: npx playwright-core install chromium\nWebKit/Firefox 엔진: npx playwright-core install webkit firefox';
+
+export type Engine = 'chromium' | 'webkit' | 'firefox';
+export function parseEngine(v: string | undefined): Engine {
+  return v === 'webkit' || v === 'firefox' || v === 'chromium' ? v : 'chromium';
+}
 
 export function channelOrder(explicit: string | undefined, env: string | undefined): Array<string | undefined> {
   const named = [...new Set([explicit, env, 'chrome', 'msedge'].filter((c): c is string => !!c))];
@@ -14,7 +19,7 @@ export class BrowserLauncher {
   page: Page | null = null;
   private launchedOnce = false;
   private raw: Array<{ level: ConsoleEntry['level']; text: string; at: string }> = [];
-  constructor(private readonly opts: { overlaySource: string; port: number; token: string; profileDir: string; headless?: boolean; channel?: string }) {}
+  constructor(private readonly opts: { overlaySource: string; port: number; token: string; profileDir: string; headless?: boolean; channel?: string; engine?: Engine }) {}
 
   isAlive(): boolean { return !!this.ctx && !!this.page && !this.page.isClosed(); }
   wasLaunched(): boolean { return this.launchedOnce; }
@@ -23,18 +28,26 @@ export class BrowserLauncher {
     return this.opts.overlaySource.replace(/__COBRO_PORT__/g, String(this.opts.port)).replace(/__COBRO_TOKEN__/g, JSON.stringify(this.opts.token));
   }
   private async launch(): Promise<void> {
-    const tried: string[] = [];
-    const order = channelOrder(this.opts.channel, process.env.COBRO_BROWSER_CHANNEL);
-    for (const channel of order) {
-      try {
-        this.ctx = await chromium.launchPersistentContext(this.opts.profileDir, {
-          headless: this.opts.headless ?? false, channel: channel === 'chromium' ? undefined : channel,
-          bypassCSP: true, viewport: null, args: ['--disable-infobars'], ignoreDefaultArgs: ['--enable-automation'],
-        });
-        break;
-      } catch (e) { tried.push(`${channel ?? 'bundled'}: ${(e as Error).message.split('\n')[0]}`); this.ctx = null; }
+    const engine = this.opts.engine ?? 'chromium';
+    if (engine !== 'chromium') {
+      const type = engine === 'webkit' ? webkit : firefox;
+      this.ctx = await type.launchPersistentContext(this.opts.profileDir, {
+        headless: this.opts.headless ?? false, bypassCSP: true, viewport: null,
+      });
+    } else {
+      const tried: string[] = [];
+      const order = channelOrder(this.opts.channel, process.env.COBRO_BROWSER_CHANNEL);
+      for (const channel of order) {
+        try {
+          this.ctx = await chromium.launchPersistentContext(this.opts.profileDir, {
+            headless: this.opts.headless ?? false, channel: channel === 'chromium' ? undefined : channel,
+            bypassCSP: true, viewport: null, args: ['--disable-infobars'], ignoreDefaultArgs: ['--enable-automation'],
+          });
+          break;
+        } catch (e) { tried.push(`${channel ?? 'bundled'}: ${(e as Error).message.split('\n')[0]}`); this.ctx = null; }
+      }
+      if (!this.ctx) throw new Error(INSTALL_HINT + '\n' + tried.join('\n'));
     }
-    if (!this.ctx) throw new Error(INSTALL_HINT + '\n' + tried.join('\n'));
     await this.ctx.addInitScript(this.injected());
     this.page = this.ctx.pages()[0] ?? (await this.ctx.newPage());
     this.attach(this.page);

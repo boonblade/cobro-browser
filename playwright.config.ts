@@ -8,4 +8,8 @@ export default defineConfig({
     port: 4173,
     reuseExistingServer: true,
   },
+  projects: [
+    { name: 'chromium', use: { browserName: 'chromium' } },
+    { name: 'webkit', use: { browserName: 'webkit' }, testMatch: /overlay\.spec\.ts/ },
+  ],
 });
