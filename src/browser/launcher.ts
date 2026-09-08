@@ -4,6 +4,11 @@ import type { ConsoleEntry, Rect } from '../core/types.js';
 
 const INSTALL_HINT = 'Chrome 또는 Edge를 찾지 못했습니다. Chrome을 설치하거나 COBRO_BROWSER_CHANNEL(chrome|msedge|chromium)을 지정하세요. 번들 Chromium: npx playwright-core install chromium';
 
+export function channelOrder(explicit: string | undefined, env: string | undefined): Array<string | undefined> {
+  const named = [...new Set([explicit, env, 'chrome', 'msedge'].filter((c): c is string => !!c))];
+  return [...named, undefined];
+}
+
 export class BrowserLauncher {
   private ctx: BrowserContext | null = null;
   page: Page | null = null;
@@ -18,9 +23,8 @@ export class BrowserLauncher {
   }
   private async launch(): Promise<void> {
     const tried: string[] = [];
-    const order: Array<string | undefined> = [...new Set([this.opts.channel, process.env.COBRO_BROWSER_CHANNEL, 'chrome', 'msedge', undefined])];
+    const order = channelOrder(this.opts.channel, process.env.COBRO_BROWSER_CHANNEL);
     for (const channel of order) {
-      if (channel === 'chromium') { /* 번들 */ }
       try {
         this.ctx = await chromium.launchPersistentContext(this.opts.profileDir, {
           headless: this.opts.headless ?? false, channel: channel === 'chromium' ? undefined : channel,
@@ -41,7 +45,7 @@ export class BrowserLauncher {
     p.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') push(m.type() as 'error' | 'warning', m.text()); });
     p.on('pageerror', (e) => push('pageerror', e.message));
     p.on('requestfailed', (r) => push('requestfailed', `${r.method()} ${r.url()} — ${r.failure()?.errorText ?? ''}`));
-    p.on('load', () => { this.raw = []; }); // 문서가 바뀌면 이전 문서의 에러는 버린다
+    p.on('load', () => { if (p === this.page) this.raw = []; }); // 활성 탭이 새 문서로 바뀌면 이전 문서의 에러는 버린다(백그라운드 탭의 load는 무시)
   }
   async open(url: string): Promise<{ title: string; restarted: boolean }> {
     const restarted = !this.isAlive() && this.launchedOnce;
