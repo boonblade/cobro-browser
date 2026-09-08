@@ -17,9 +17,7 @@ npm install -g github:boonblade/cobro-browser
 claude mcp add -s user cobro-browser -- cobro-browser
 ```
 
-소스는 비공개 GitHub 저장소에 있다. 설치하려면 이 저장소에 대한 접근 권한(`gh auth login` 또는 SSH 키 등록)이 먼저 필요하다. `npm install -g` 중에 `prepare` 훅이 `dist/`를 빌드하고, `package.json`의 `bin`이 `cobro-browser` 명령을 PATH에 올려 둔다.
-
-`esbuild`는 빌드에만 쓰이지만 `dependencies`로 등록돼 있다 — 이 패키지는 설치 시점에 스스로를 빌드하는데(`prepare`), `npm install -g`로 git 저장소를 전역 설치할 때 npm이 devDependencies를 항상 갖춰 주지 않기 때문이다(로컬 clone 후 `npm i`로 개발자 설치할 때는 devDependencies가 정상 설치되므로 문제 없음).
+소스는 비공개 GitHub 저장소에 있다. 설치하려면 이 저장소에 대한 접근 권한(`gh auth login` 또는 SSH 키 등록)이 먼저 필요하다. 빌드 산출물(`dist/server.js`, `dist/overlay.js`)이 저장소에 미리 커밋돼 있어 설치 시 별도 빌드 없이 바로 쓸 수 있다. `package.json`의 `bin`이 `cobro-browser` 명령을 PATH에 올려 둔다.
 
 업데이트(재설치)는 같은 명령을 다시 실행한다: `npm install -g github:boonblade/cobro-browser`.
 
@@ -50,8 +48,9 @@ WebKit(Safari 엔진)을 쓰려면 등록 명령에 `-e COBRO_BROWSER=webkit`을
 git clone <저장소>
 cd cobro-browser
 npm i
-npm run build
 ```
+
+`dist/`가 저장소에 커밋돼 있어 `npm i` 직후 바로 실행할 수 있다(별도 빌드 불필요). 소스를 수정했으면 `npm run build`로 `dist/`를 갱신하고 커밋에 포함한다(훅이 자동으로 돌리지만, 훅이 없는 환경이면 직접 실행).
 
 Chrome 또는 Edge가 필요하다. 둘 다 없으면 `npx playwright-core install chromium` 후 `COBRO_BROWSER_CHANNEL=chromium`.
 

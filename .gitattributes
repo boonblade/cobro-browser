@@ -1,0 +1,4 @@
+# dist/는 커밋된 빌드 산출물이다(Task 14 R44). Windows core.autocrlf가 체크아웃 시
+# LF를 CRLF로 바꾸면 scripts/check-dist.mjs의 바이트 단위 비교가 매번 어긋난다 —
+# 항상 LF로 고정해 재빌드 결과와 정확히 일치하게 한다.
+dist/*.js text eol=lf
