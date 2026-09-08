@@ -4,10 +4,11 @@
   "private": true,
   "type": "module",
   "bin": { "cobro-browser": "dist/server.js" },
+  "files": ["dist", "skills", "README.md"],
   "engines": { "node": ">=20" },
   "scripts": {
     "build": "node scripts/build.mjs",
-    "check": "tsc --noEmit && eslint .",
+    "check": "tsc --noEmit && eslint . && node scripts/check-dist.mjs",
     "test": "vitest run",
     "fixtures:install": "npm ci --prefix test/fixtures/vite-app",
     "e2e": "npm run build && npm run fixtures:install && playwright test",

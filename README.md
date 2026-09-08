@@ -10,16 +10,53 @@
 
 ## 설치
 
+### ① 사용자 설치(권장)
+
 ```bash
-npm i
-npm run build
+claude mcp add -s user cobro-browser -- npx -y github:boonblade/cobro-browser
 ```
+
+소스는 비공개 GitHub 저장소에 있다. 설치하려면 이 저장소에 대한 접근 권한(`gh auth login` 또는 SSH 키 등록)이 먼저 필요하다. 빌드 산출물(`dist/server.js`, `dist/overlay.js`)이 저장소에 미리 커밋돼 있어 설치 시 별도 빌드가 없다. `npx`가 npm 캐시에 패키지를 받아 두고 실행하며, 첫 시작은 저장소를 받느라 20초 안팎, 이후에는 7초 안팎 걸린다(실측). 업데이트는 자동이다 — 다음 시작 때 최신 `master`를 받는다.
+
+`npm install -g github:…` 형태의 전역 설치는 쓰지 않는다. npm이 git 주소에서 전역 설치할 때 `dist/`를 빠뜨리는 문제가 재현됐다(Task 14 보고). npm 레지스트리 배포가 시작되면 `npx cobro-browser` / `npm install -g cobro-browser`로 바뀐다.
+
+WebKit(Safari 엔진)을 쓰려면 등록 명령에 `-e COBRO_BROWSER=webkit`을 추가한다.
+
+다른 호스트는 같은 명령(`npx -y github:boonblade/cobro-browser`)을 stdio MCP 서버로 등록한다. 서버는 호스트가 실행하고, 호스트가 stdio를 닫으면 브라우저까지 함께 정리된다.
+
+스킬 설치(`skills/claude-code/SKILL.md`, 이름 `cobro`)는 저장소 접근 권한이 있으므로 `gh`로 파일 하나를 받아 호스트의 스킬 경로에 둔다:
+
+- PowerShell:
+  ```powershell
+  New-Item -ItemType Directory -Force "$HOME\.claude\skills\cobro" | Out-Null
+  $b64 = (gh api repos/boonblade/cobro-browser/contents/skills/claude-code/SKILL.md --jq .content) -join ''
+  [IO.File]::WriteAllBytes("$HOME\.claude\skills\cobro\SKILL.md", [Convert]::FromBase64String($b64))
+  ```
+- bash/zsh:
+  ```bash
+  mkdir -p ~/.claude/skills/cobro
+  gh api repos/boonblade/cobro-browser/contents/skills/claude-code/SKILL.md --jq .content | base64 -d > ~/.claude/skills/cobro/SKILL.md
+  ```
+
+복사해 두면 `/cobro`로 부를 수 있다.
+
+### ② 개발자 설치
+
+```bash
+git clone <저장소>
+cd cobro-browser
+npm i
+```
+
+`dist/`가 저장소에 커밋돼 있어 `npm i` 직후 바로 실행할 수 있다(별도 빌드 불필요). 소스를 수정했으면 `npm run build`로 `dist/`를 갱신하고 커밋에 포함한다(훅이 자동으로 돌리지만, 훅이 없는 환경이면 직접 실행).
 
 Chrome 또는 Edge가 필요하다. 둘 다 없으면 `npx playwright-core install chromium` 후 `COBRO_BROWSER_CHANNEL=chromium`.
 
 WebKit(Safari 엔진) 검증용으로 쓰려면 `npx playwright-core install webkit` 후 `COBRO_BROWSER=webkit`.
 
 e2e(`npm run e2e`)는 Vite 호환성 픽스처를 쓴다. `e2e` 스크립트가 `npm run fixtures:install`(= `npm ci --prefix test/fixtures/vite-app`)을 먼저 돌려 알아서 채워 넣는다(이미 설치돼 있으면 금방 끝난다). 픽스처의 `node_modules`는 커밋하지 않는다.
+
+등록 절차는 아래 「호스트 등록」 절을 따른다(로컬 절대경로로 등록).
 
 ## 호스트 등록
 
