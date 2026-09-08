@@ -17,6 +17,14 @@ describe('inspectElement', () => {
     expect(STYLE_KEYS).toHaveLength(12);
   });
 
+  it('keeps display even when it is none (핵심 디버깅 단서), still drops none/normal elsewhere', () => {
+    document.body.innerHTML = '<div id="hidden" style="display:none;border-radius:none;font-weight:normal"></div>';
+    const styles = inspectElement(document.getElementById('hidden')!).styles;
+    expect(styles.display).toBe('none');
+    expect(styles['border-radius']).toBeUndefined();
+    expect(styles['font-weight']).toBeUndefined();
+  });
+
   it('walks up fibers to the nearest named component', () => {
     document.body.innerHTML = '<div></div>';
     const el = document.querySelector('div')!;
