@@ -42,4 +42,4 @@ export type ServerMsg =
   | { type: 'done'; info: DoneInfo; strategy: RefreshStrategy }
   | { type: 'error'; message: string };
 
-export type WaitResult = { status: 'sent'; payload: Payload; browserRestarted?: boolean } | { status: 'pending' };
+export type WaitResult = { status: 'sent'; payload: Payload; browserRestarted?: boolean } | { status: 'pending'; browserGone?: boolean };

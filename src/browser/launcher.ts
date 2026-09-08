@@ -17,6 +17,7 @@ export class BrowserLauncher {
   constructor(private readonly opts: { overlaySource: string; port: number; token: string; profileDir: string; headless?: boolean; channel?: string }) {}
 
   isAlive(): boolean { return !!this.ctx && !!this.page && !this.page.isClosed(); }
+  wasLaunched(): boolean { return this.launchedOnce; }
 
   private injected(): string {
     return this.opts.overlaySource.replace(/__COBRO_PORT__/g, String(this.opts.port)).replace(/__COBRO_TOKEN__/g, JSON.stringify(this.opts.token));
@@ -53,12 +54,21 @@ export class BrowserLauncher {
     await this.page!.goto(url, { waitUntil: 'load' });
     return { title: await this.page!.title(), restarted };
   }
-  async screenshot(opts: { rect?: Rect; outPath: string }): Promise<string> {
+  private async rectOfSelector(selector: string): Promise<Rect | undefined> {
+    const p = this.page!;
+    const box = await p.locator(selector).first().boundingBox().catch(() => null);
+    if (!box) { console.error(`[cobro] screenshot: selector로 요소를 찾지 못해 뷰포트를 찍는다 — ${selector}`); return undefined; }
+    // boundingBox는 뷰포트 기준 좌표 → 스크롤을 더해 페이지 좌표(clip이 쓰는 좌표계)로 바꾼다
+    const scroll = await p.evaluate(() => ({ x: window.scrollX, y: window.scrollY }));
+    return { x: box.x + scroll.x, y: box.y + scroll.y, w: box.width, h: box.height };
+  }
+  async screenshot(opts: { rect?: Rect; selector?: string; outPath: string }): Promise<string> {
     if (!this.isAlive()) throw new Error('browser not open');
     const p = this.page!;
-    if (opts.rect) {
+    const rect = opts.rect ?? (opts.selector ? await this.rectOfSelector(opts.selector) : undefined);
+    if (rect) {
       const pad = 16;
-      const clip = { x: Math.max(0, opts.rect.x - pad), y: Math.max(0, opts.rect.y - pad), width: Math.max(1, opts.rect.w + pad * 2), height: Math.max(1, opts.rect.h + pad * 2) };
+      const clip = { x: Math.max(0, rect.x - pad), y: Math.max(0, rect.y - pad), width: Math.max(1, rect.w + pad * 2), height: Math.max(1, rect.h + pad * 2) };
       try { await p.screenshot({ path: opts.outPath, clip, fullPage: true }); return opts.outPath; }
       catch (e) { console.error('[cobro] clip screenshot failed, falling back to viewport', (e as Error).message); }
     }

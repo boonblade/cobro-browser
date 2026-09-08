@@ -17,6 +17,13 @@ test('launches, injects overlay, buffers console errors, takes clipped screensho
     const out = join(dir, 'shot.png');
     expect(await l.screenshot({ rect: { x: 0, y: 0, w: 120, h: 40 }, outPath: out })).toBe(out);
     expect(existsSync(out)).toBe(true);
+    const bySel = join(dir, 'shot-sel.png');
+    expect(await l.screenshot({ selector: '#target', outPath: bySel })).toBe(bySel);
+    expect(existsSync(bySel)).toBe(true);
+    const noSel = join(dir, 'shot-nosel.png'); // 못 찾으면 뷰포트로 폴백
+    expect(await l.screenshot({ selector: '#nope-not-here', outPath: noSel })).toBe(noSel);
+    expect(existsSync(noSel)).toBe(true);
+    expect(l.wasLaunched()).toBe(true);
     await l.close();
     expect(l.isAlive()).toBe(false);
     const again = await l.open('http://127.0.0.1:4173/basic.html');

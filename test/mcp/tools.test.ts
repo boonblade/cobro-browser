@@ -7,15 +7,25 @@ import { join } from 'node:path';
 import { Store } from '../../src/core/store.js';
 import { SessionCore } from '../../src/core/session.js';
 import { createMcpServer } from '../../src/mcp/server.js';
+import type { Rect } from '../../src/core/types.js';
 
 const page = { url: 'http://x/', title: 'X', viewport: { w: 1, h: 1 } };
+type Shot = { rect?: Rect; selector?: string; outPath: string };
 let core: SessionCore; let client: Client; let calls: string[]; let closeAll: () => Promise<void>;
+let state: { alive: boolean; launched: boolean }; let shots: Shot[];
 
 beforeEach(async () => {
   const store = new Store(mkdtempSync(join(tmpdir(), 'cobro-')));
-  core = new SessionCore(store); calls = [];
+  core = new SessionCore(store); calls = []; shots = [];
+  state = { alive: false, launched: false };
   let openCount = 0;
-  const browser = { open: async (u: string) => { calls.push('open:' + u); openCount++; return { title: 'T', restarted: openCount > 1 }; }, screenshot: async (o: { outPath: string }) => { calls.push('shot'); return o.outPath; }, close: async () => { calls.push('close'); } };
+  const browser = {
+    open: async (u: string) => { calls.push('open:' + u); openCount++; state.alive = true; state.launched = true; return { title: 'T', restarted: openCount > 1 }; },
+    screenshot: async (o: Shot) => { calls.push('shot'); shots.push(o); return o.outPath; },
+    close: async () => { calls.push('close'); state.alive = false; },
+    isAlive: () => state.alive,
+    wasLaunched: () => state.launched,
+  };
   const server = createMcpServer({ core, browser, shotPath: (id) => `/s/${id}.png`, done: (info) => core.done(info), defaultWaitSec: 1 });
   const [ct, st] = InMemoryTransport.createLinkedPair();
   client = new Client({ name: 't', version: '0' });
@@ -57,6 +67,19 @@ describe('mcp tools', () => {
     expect(r2.status).toBe('sent');
     expect(r2.browserRestarted).toBeUndefined();
   }, 15_000);
+  it('wait/status/done report browserGone when the user closed the browser', async () => {
+    await call('open', { url: 'http://a/' });
+    core.setDrafts([{ id: 'b', note: 'n', elements: [], status: 'draft', createdAt: 't' }]);
+    core.markSent(['b'], page);
+    state.alive = false; // 사용자가 창을 닫았다
+    const t0 = Date.now();
+    expect(await call('wait', { timeoutSec: 5 })).toEqual({ status: 'pending', browserGone: true });
+    expect(Date.now() - t0).toBeLessThan(1500); // 기다리지 않고 즉시 돌아온다
+    expect(await call('status', { text: '수정 중' })).toEqual({ ok: true, browserGone: true });
+    expect(core.session.agent).toEqual({ status: 'working', text: '수정 중' }); // 상태는 그래도 갱신한다
+    expect(await call('done', { summary: '완료' })).toEqual({ ok: true, doneBatches: 1, browserGone: true });
+    expect(core.session.batches[0]!.status).toBe('done');
+  }, 15_000);
   it('status sets working text; done marks sent batches and returns count', async () => {
     core.setDrafts([{ id: 'b', note: 'n', elements: [], status: 'draft', createdAt: 't' }]);
     core.markSent(['b'], page);
@@ -65,9 +88,13 @@ describe('mcp tools', () => {
     expect(await call('done', { summary: '완료', selectors: ['#a'] })).toEqual({ ok: true, doneBatches: 1 });
     expect(core.session.batches[0]!.status).toBe('done');
   });
-  it('screenshot returns path; close closes browser', async () => {
+  it('screenshot returns path and passes selector through; close closes browser', async () => {
     const r = await call('screenshot');
     expect(r.path).toMatch(/\.png$/);
+    expect(shots.at(-1)!.selector).toBeUndefined();
+    const r2 = await call('screenshot', { selector: '#target' });
+    expect(r2.path).toMatch(/\.png$/);
+    expect(shots.at(-1)!.selector).toBe('#target');
     expect(await call('close')).toEqual({ ok: true });
     expect(calls).toContain('close');
   });
