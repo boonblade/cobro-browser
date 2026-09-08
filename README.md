@@ -46,12 +46,22 @@ claude mcp add cobro-browser -- node /절대경로/cobro-browser/dist/server.js
 |---|---|---|
 | `COBRO_STATE_DIR` | `<cwd>/.cobro` | 세션 상태(`session.json`)와 스크린샷(`shots/`) 위치 |
 | `COBRO_PROFILE_DIR` | `~/.cobro/profile` | 브라우저 프로필. 프로젝트마다 재로그인 없음 |
-| `COBRO_WAIT_SEC` | `1800` | `wait`의 기본 제한 시간(초). Cursor·Codex는 `50` 권장 |
+| `COBRO_WAIT_SEC` | `1800` | `wait`의 기본 제한 시간(초, 최소 5). Cursor·Codex는 `50` 권장 |
 | `COBRO_BROWSER_CHANNEL` | 없음 | `chrome` \| `msedge` \| `chromium`. 지정하면 그 채널을 먼저 시도 |
 | `COBRO_HEADLESS` | 없음 | `1`이면 헤드리스(테스트용) |
-| `COBRO_TICK_MS` | `30000` | `wait` 진행 알림 주기(밀리초). 테스트에서만 줄인다 |
+| `COBRO_TICK_MS` | `30000` | `wait` 진행 알림 주기(밀리초, 최소 1000). 테스트에서만 줄인다 |
 
-WebSocket 포트는 빈 포트를 자동으로 고른다. 고정 포트는 없다.
+숫자 변수는 최솟값 미만이거나 수가 아니면 **무시하고 기본값**을 쓴다(그때 stderr에 한 줄 남긴다). WebSocket 포트는 빈 포트를 자동으로 고른다. 고정 포트는 없다.
+
+### `.cobro/config.json`
+
+상태 폴더(`COBRO_STATE_DIR`, 기본 `<cwd>/.cobro`)에 두면 서버가 시작할 때 읽는다. 지금 읽는 항목은 하나다.
+
+```json
+{ "refreshStrategy": "event" }
+```
+
+값은 `none` | `reload` | `event`만 받는다. 그 밖의 값·깨진 JSON은 무시하고 stderr에 한 줄 남긴다. 우선순위는 **`open`의 `strategy` 인자 > `config.json` > 자동 감지**(HMR 있으면 `none`, 없으면 `reload`).
 
 ## `.cobro/`를 gitignore에
 
@@ -73,7 +83,7 @@ window.addEventListener('cobro:done', (e) => {
 });
 ```
 
-고정 방법은 `open`의 `strategy` 인자(`strategy: "event"`)다. 한 번 고정하면 세션 상태에 남아 다음 `open`까지 유지된다. 프로젝트가 준 JS를 실행하는 `script` 전략은 두지 않는다(임의 코드 실행 표면).
+고정 방법은 두 가지: `open`의 `strategy` 인자(`strategy: "event"`), 또는 `.cobro/config.json`의 `{"refreshStrategy":"event"}`. `open` 인자가 우선하고, 한 번 고정하면 세션 상태에 남는다. 프로젝트가 준 JS를 실행하는 `script` 전략은 두지 않는다(임의 코드 실행 표면).
 
 ## 보안
 
