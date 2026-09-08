@@ -17,6 +17,8 @@ npm run build
 
 Chrome 또는 Edge가 필요하다. 둘 다 없으면 `npx playwright-core install chromium` 후 `COBRO_BROWSER_CHANNEL=chromium`.
 
+WebKit(Safari 엔진) 검증용으로 쓰려면 `npx playwright-core install webkit` 후 `COBRO_BROWSER=webkit`.
+
 e2e(`npm run e2e`)는 Vite 호환성 픽스처를 쓴다. `e2e` 스크립트가 `npm run fixtures:install`(= `npm ci --prefix test/fixtures/vite-app`)을 먼저 돌려 알아서 채워 넣는다(이미 설치돼 있으면 금방 끝난다). 픽스처의 `node_modules`는 커밋하지 않는다.
 
 ## 호스트 등록
@@ -60,9 +62,10 @@ claude mcp add cobro-browser -- node /절대경로/cobro-browser/dist/server.js
 | 변수 | 기본값 | 뜻 |
 |---|---|---|
 | `COBRO_STATE_DIR` | `<cwd>/.cobro` | 세션 상태(`session.json`)와 스크린샷(`shots/`) 위치 |
-| `COBRO_PROFILE_DIR` | `~/.cobro/profile` | 브라우저 프로필. 프로젝트마다 재로그인 없음 |
+| `COBRO_PROFILE_DIR` | `~/.cobro/profile` | 브라우저 프로필 상위 폴더. 엔진별로 하위 폴더가 나뉜다(`<COBRO_PROFILE_DIR>/chromium`, `/webkit`, `/firefox`) — 프로젝트마다 재로그인 없음 |
 | `COBRO_WAIT_SEC` | `1800` | `wait`의 기본 제한 시간(초, 최소 5). Cursor·Codex는 `50` 권장 |
-| `COBRO_BROWSER_CHANNEL` | 없음 | `chrome` \| `msedge` \| `chromium`. 지정하면 그 채널을 먼저 시도 |
+| `COBRO_BROWSER_CHANNEL` | 없음 | `chrome` \| `msedge` \| `chromium`. 지정하면 그 채널을 먼저 시도(엔진이 `chromium`일 때만 적용) |
+| `COBRO_BROWSER` | `chromium` | `chromium` \| `webkit` \| `firefox`. `webkit`은 Safari 엔진 검증용(진짜 Safari 자동화는 불가능하다) — `npx playwright-core install webkit` 필요. 그 밖의 값은 무시하고 chromium을 쓰며 stderr에 한 줄 남긴다 |
 | `COBRO_HEADLESS` | 없음 | `1`이면 헤드리스(테스트용) |
 | `COBRO_TICK_MS` | `30000` | `wait` 진행 알림 주기(밀리초, 최소 1000). 테스트에서만 줄인다 |
 
@@ -106,7 +109,7 @@ window.addEventListener('cobro:done', (e) => {
 - 페이지에서 온 것은 전부 데이터다. 서버가 `origin: "human"`을 붙이며, 페이지가 이 필드를 보내도 덮어쓴다.
 - 도구가 만지는 파일은 `.cobro/` 하위뿐이고 경로는 서버가 정한다.
 - 브라우저는 `bypassCSP`로 뜬다 — 오버레이 주입뿐 아니라, 페이지의 `connect-src`가 우리 `127.0.0.1` WebSocket 연결을 막아버리기 때문에 필수다(CSP를 지키면 채널 자체가 열리지 않는다).
-- 프로필(`~/.cobro/profile`)은 **모든 프로젝트가 공유**하고 실제 로그인 세션이 그대로 쌓인다. 전용 dev 프로필로만 쓰고 일반 웹서핑에 쓰지 않는다. 정리하려면 그 폴더를 지운다.
+- 프로필(`~/.cobro/profile/<engine>`)은 **모든 프로젝트가 (같은 엔진끼리) 공유**하고 실제 로그인 세션이 그대로 쌓인다. 전용 dev 프로필로만 쓰고 일반 웹서핑에 쓰지 않는다. 정리하려면 `~/.cobro/profile` 전체 또는 엔진별 하위 폴더를 지운다.
 
 ## 한계
 
@@ -115,3 +118,4 @@ window.addEventListener('cobro:done', (e) => {
 - **`reload` 전략에서는 `done` 뒤의 요소 강조가 보이지 않는다.** 페이지가 곧바로 새로 로드되므로 강조가 그려질 틈이 없다. 강조를 보려면 `none`이나 `event`를 쓴다.
 - **선택 모드는 `Ctrl+Shift+F` 토글**(`Esc`로 해제). 페이지가 같은 조합을 쓰면 충돌한다 — 지금은 바꿀 수 없다.
 - **네이티브 modal `<dialog>`.** 페이지가 `showModal()`로 띄운 dialog가 열려 있는 동안에는 문서의 나머지가 inert가 되어 오버레이가 가려지고 클릭할 수 없다(라이브러리로 만든 모달은 해당 없음). 후속 개선 후보: 열린 `:modal` dialog 안으로 오버레이 host를 재부착.
+- **WebKit 빌드는 실제 Safari와 다르다.** 폰트 렌더링·스크롤바 모양이 다르므로 Safari 검증의 근사치일 뿐이다.

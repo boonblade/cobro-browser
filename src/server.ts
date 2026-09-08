@@ -6,14 +6,16 @@ import { randomBytes } from 'node:crypto';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { Store } from './core/store.js';
 import { createBridge } from './bridge.js';
-import { BrowserLauncher } from './browser/launcher.js';
+import { BrowserLauncher, parseEngine } from './browser/launcher.js';
 import { createMcpServer } from './mcp/server.js';
 import type { RefreshStrategy, Rect } from './core/types.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const overlaySource = readFileSync(join(here, 'overlay.js'), 'utf8'); // build가 server.js 옆에 둔다
 const stateDir = process.env.COBRO_STATE_DIR ?? join(process.cwd(), '.cobro');
-const profileDir = process.env.COBRO_PROFILE_DIR ?? join(homedir(), '.cobro', 'profile');
+const engine = parseEngine(process.env.COBRO_BROWSER);
+if (process.env.COBRO_BROWSER && engine !== process.env.COBRO_BROWSER) console.error(`[cobro] COBRO_BROWSER=${process.env.COBRO_BROWSER} 무시 — chromium|webkit|firefox 중 하나. chromium 사용`);
+const profileDir = join(process.env.COBRO_PROFILE_DIR ?? join(homedir(), '.cobro', 'profile'), engine);
 
 // 잘못된 값(0·문자열·음수)이 setInterval로 새어 들어가면 1ms 알림 폭주가 된다 — 검사 후 기본값으로 되돌린다
 const envInt = (v: string | undefined, min: number, name: string): number | undefined => {
@@ -53,7 +55,7 @@ const bridge = await createBridge({
 });
 const fixed = configStrategy();
 if (fixed) bridge.core.setStrategy(fixed);
-launcher = new BrowserLauncher({ overlaySource, port: bridge.port, token, profileDir, headless: process.env.COBRO_HEADLESS === '1' });
+launcher = new BrowserLauncher({ overlaySource, port: bridge.port, token, profileDir, headless: process.env.COBRO_HEADLESS === '1', engine });
 
 const mcp = createMcpServer({
   core: bridge.core, browser: launcher, done: (info) => bridge.done(info), shotPath: (id) => store.shotPath(id), manualShotPath: (n) => store.manualShotPath(n), defaultWaitSec, tickMs,
