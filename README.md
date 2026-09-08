@@ -156,3 +156,11 @@ window.addEventListener('cobro:done', (e) => {
 - **선택 모드는 `Ctrl+Shift+F` 토글**(`Esc`로 해제). 페이지가 같은 조합을 쓰면 충돌한다 — 지금은 바꿀 수 없다.
 - **네이티브 modal `<dialog>`.** 페이지가 `showModal()`로 띄운 dialog가 열려 있는 동안에는 문서의 나머지가 inert가 되어 오버레이가 가려지고 클릭할 수 없다(라이브러리로 만든 모달은 해당 없음). 후속 개선 후보: 열린 `:modal` dialog 안으로 오버레이 host를 재부착.
 - **WebKit 빌드는 실제 Safari와 다르다.** 폰트 렌더링·스크롤바 모양이 다르므로 Safari 검증의 근사치일 뿐이다.
+
+## 라이선스
+
+[Apache License 2.0](LICENSE). 저작권 고지는 [NOTICE](NOTICE)에 있다.
+
+- "Cobro"라는 이름과 슬로건은 상표로, Apache-2.0 §6에 따라 이 라이선스가 사용을 허락하지 않는다. 포크는 다른 이름을 쓴다.
+- 기여는 [DCO](https://developercertificate.org/) 방식이다 — 커밋에 `Signed-off-by:` 줄(`git commit -s`)을 붙이면 된다. 별도 CLA는 없다.
+- 이 소프트웨어는 AI 보조(Claude Code)로 작성됐다. 설계·방향·모든 변경의 승인은 저작권자가 했다.
