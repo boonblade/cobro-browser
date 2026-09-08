@@ -54,7 +54,7 @@ Chrome 또는 Edge가 필요하다. 둘 다 없으면 `npx playwright-core insta
 
 WebKit(Safari 엔진) 검증용으로 쓰려면 `npx playwright-core install webkit` 후 `COBRO_BROWSER=webkit`.
 
-e2e(`npm run e2e`)는 Vite 호환성 픽스처를 쓴다. `e2e` 스크립트가 `npm run fixtures:install`(= `npm ci --prefix test/fixtures/vite-app`)을 먼저 돌려 알아서 채워 넣는다(이미 설치돼 있으면 금방 끝난다). 픽스처의 `node_modules`는 커밋하지 않는다.
+e2e(`npm run e2e`)는 Vite 호환성 픽스처를 쓴다. `e2e` 스크립트가 `npm run fixtures:install`을 먼저 돌려 알아서 채워 넣는다(`node_modules`가 이미 있으면 건너뛴다). 픽스처 lockfile이 바뀌어도 가드가 재설치를 건너뛴다 — 필요하면 사람이 `test/fixtures/vite-app/node_modules`를 지운다. 픽스처의 `node_modules`는 커밋하지 않는다.
 
 등록 절차는 아래 「호스트 등록」 절을 따른다(로컬 절대경로로 등록).
 
