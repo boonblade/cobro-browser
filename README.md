@@ -13,31 +13,28 @@
 ### ① 사용자 설치(권장)
 
 ```bash
-npm install -g github:boonblade/cobro-browser
-claude mcp add -s user cobro-browser -- cobro-browser
+claude mcp add -s user cobro-browser -- npx -y github:boonblade/cobro-browser
 ```
 
-소스는 비공개 GitHub 저장소에 있다. 설치하려면 이 저장소에 대한 접근 권한(`gh auth login` 또는 SSH 키 등록)이 먼저 필요하다. 빌드 산출물(`dist/server.js`, `dist/overlay.js`)이 저장소에 미리 커밋돼 있어 설치 시 별도 빌드 없이 바로 쓸 수 있다. `package.json`의 `bin`이 `cobro-browser` 명령을 PATH에 올려 둔다.
+소스는 비공개 GitHub 저장소에 있다. 설치하려면 이 저장소에 대한 접근 권한(`gh auth login` 또는 SSH 키 등록)이 먼저 필요하다. 빌드 산출물(`dist/server.js`, `dist/overlay.js`)이 저장소에 미리 커밋돼 있어 설치 시 별도 빌드가 없다. `npx`가 npm 캐시에 패키지를 받아 두고 실행하며, 첫 시작은 저장소를 받느라 20초 안팎, 이후에는 7초 안팎 걸린다(실측). 업데이트는 자동이다 — 다음 시작 때 최신 `master`를 받는다.
 
-업데이트(재설치)는 같은 명령을 다시 실행한다: `npm install -g github:boonblade/cobro-browser`.
+`npm install -g github:…` 형태의 전역 설치는 쓰지 않는다. npm이 git 주소에서 전역 설치할 때 `dist/`를 빠뜨리는 문제가 재현됐다(Task 14 보고). npm 레지스트리 배포가 시작되면 `npx cobro-browser` / `npm install -g cobro-browser`로 바뀐다.
 
 WebKit(Safari 엔진)을 쓰려면 등록 명령에 `-e COBRO_BROWSER=webkit`을 추가한다.
 
-다른 호스트는 같은 실행 파일(`cobro-browser`)을 stdio MCP 서버로 등록한다. 서버는 호스트가 실행하고, 호스트가 stdio를 닫으면 브라우저까지 함께 정리된다.
+다른 호스트는 같은 명령(`npx -y github:boonblade/cobro-browser`)을 stdio MCP 서버로 등록한다. 서버는 호스트가 실행하고, 호스트가 stdio를 닫으면 브라우저까지 함께 정리된다.
 
-**설치 없이 시험**하려면 `claude mcp add -s user cobro-browser -- npx -y github:boonblade/cobro-browser`로도 등록할 수 있다. 단 이 방식은 서버가 시작할 때마다 저장소를 다시 받아오고(느림), 로컬에 패키지가 남지 않아 아래 스킬 파일을 복사할 원본이 없다.
-
-스킬 설치(`skills/claude-code/SKILL.md`, 이름 `cobro`)는 전역 설치 후 다음으로 호스트의 스킬 경로에 복사한다:
+스킬 설치(`skills/claude-code/SKILL.md`, 이름 `cobro`)는 저장소 접근 권한이 있으므로 `gh`로 파일 하나를 받아 호스트의 스킬 경로에 둔다:
 
 - PowerShell:
   ```powershell
   New-Item -ItemType Directory -Force "$HOME\.claude\skills\cobro" | Out-Null
-  Copy-Item "$(npm root -g)\cobro-browser\skills\claude-code\SKILL.md" "$HOME\.claude\skills\cobro\SKILL.md"
+  gh api repos/boonblade/cobro-browser/contents/skills/claude-code/SKILL.md --jq .content | ForEach-Object { [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($_)) } | Set-Content -Encoding utf8 "$HOME\.claude\skills\cobro\SKILL.md"
   ```
 - bash/zsh:
   ```bash
   mkdir -p ~/.claude/skills/cobro
-  cp "$(npm root -g)/cobro-browser/skills/claude-code/SKILL.md" ~/.claude/skills/cobro/SKILL.md
+  gh api repos/boonblade/cobro-browser/contents/skills/claude-code/SKILL.md --jq .content | base64 -d > ~/.claude/skills/cobro/SKILL.md
   ```
 
 복사해 두면 `/cobro`로 부를 수 있다.
