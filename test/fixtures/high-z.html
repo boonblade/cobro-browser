@@ -1,0 +1,6 @@
+<!-- test/fixtures/high-z.html — 최대 z-index 고정 헤더 + 나중에 열리는 <dialog> -->
+<!doctype html><html><head><title>HighZ</title></head><body>
+<header id="hdr" style="position:fixed;left:0;right:0;bottom:0;height:80px;background:#222;color:#fff;z-index:2147483647">footer bar</header>
+<button id="openDialog">dialog</button><dialog id="nativeDlg"><p id="inDialog">native</p></dialog>
+<script>document.getElementById('openDialog').onclick=()=>document.getElementById('nativeDlg').showModal();</script>
+</body></html>

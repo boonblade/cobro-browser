@@ -2,3 +2,5 @@
 .agents-work/
 screenshots/
 node_modules/
+dist/
+test-results/
