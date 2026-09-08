@@ -29,7 +29,11 @@ export function createMcpServer(deps: { core: SessionCore; browser: BrowserLike;
     const token = extra._meta?.progressToken;
     const result = await core.wait((timeoutSec ?? deps.defaultWaitSec ?? 1800) * 1000, async (elapsed) => {
       if (token === undefined) return;
-      await extra.sendNotification({ method: 'notifications/progress', params: { progressToken: token, progress: Math.floor(elapsed / 1000), message: '피드백 대기 중' } });
+      try {
+        await extra.sendNotification({ method: 'notifications/progress', params: { progressToken: token, progress: Math.floor(elapsed / 1000), message: '피드백 대기 중' } });
+      } catch (e) {
+        console.error('[cobro] progress notification failed', (e as Error).message);
+      }
     }, { signal: extra.signal });
     if (result.status === 'sent' && restartedPending) { result.browserRestarted = true; restartedPending = false; }
     return text(result);
@@ -54,7 +58,10 @@ export function createMcpServer(deps: { core: SessionCore; browser: BrowserLike;
   }, async ({ rect }) => text({ path: await browser.screenshot({ rect, outPath: deps.shotPath('manual-' + Date.now()) }) }));
 
   server.registerTool('close', { description: '브라우저를 닫고 세션을 정리한다.', inputSchema: {} },
-    async () => { await browser.close(); await deps.onClose?.(); return text({ ok: true }); });
+    async () => {
+      try { await browser.close(); } catch (e) { console.error('[cobro] browser close failed', (e as Error).message); } finally { await deps.onClose?.(); }
+      return text({ ok: true });
+    });
 
   return server;
 }

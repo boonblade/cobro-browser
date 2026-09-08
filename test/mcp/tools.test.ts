@@ -14,7 +14,8 @@ let core: SessionCore; let client: Client; let calls: string[]; let closeAll: ()
 beforeEach(async () => {
   const store = new Store(mkdtempSync(join(tmpdir(), 'cobro-')));
   core = new SessionCore(store); calls = [];
-  const browser = { open: async (u: string) => { calls.push('open:' + u); return { title: 'T', restarted: false }; }, screenshot: async (o: { outPath: string }) => { calls.push('shot'); return o.outPath; }, close: async () => { calls.push('close'); } };
+  let openCount = 0;
+  const browser = { open: async (u: string) => { calls.push('open:' + u); openCount++; return { title: 'T', restarted: openCount > 1 }; }, screenshot: async (o: { outPath: string }) => { calls.push('shot'); return o.outPath; }, close: async () => { calls.push('close'); } };
   const server = createMcpServer({ core, browser, shotPath: (id) => `/s/${id}.png`, done: (info) => core.done(info), defaultWaitSec: 1 });
   const [ct, st] = InMemoryTransport.createLinkedPair();
   client = new Client({ name: 't', version: '0' });
@@ -38,12 +39,23 @@ describe('mcp tools', () => {
     expect(calls).toEqual(['open:http://a/']);
   });
   it('wait returns pending on timeout and sent when delivered; rejects timeoutSec below 5', async () => {
-    expect(await call('wait', { timeoutSec: 5 }).then(() => 'slow')).toBe('slow');
+    expect(await call('wait', { timeoutSec: 5 })).toEqual({ status: 'pending' });
     setTimeout(() => core.deliver({ origin: 'human', sentAt: 't', page, batches: [], console: [], refreshStrategy: 'none' }), 50);
     expect(await call('wait', { timeoutSec: 5 })).toMatchObject({ status: 'sent', payload: { origin: 'human' } });
     // 설치된 SDK(v1.30.0)는 zod 검증 실패를 reject가 아니라 isError:true 응답으로 돌려준다.
     const bad = await client.callTool({ name: 'wait', arguments: { timeoutSec: 1 } });
     expect(bad.isError).toBe(true);
+  }, 15_000);
+  it('wait attaches browserRestarted once right after a restart, then clears it', async () => {
+    await call('open', { url: 'http://a/' });
+    const second = await call('open', { url: 'http://a/' });
+    expect(second.restarted).toBe(true);
+    setTimeout(() => core.deliver({ origin: 'human', sentAt: 't', page, batches: [], console: [], refreshStrategy: 'none' }), 50);
+    expect(await call('wait', { timeoutSec: 5 })).toMatchObject({ status: 'sent', browserRestarted: true });
+    setTimeout(() => core.deliver({ origin: 'human', sentAt: 't', page, batches: [], console: [], refreshStrategy: 'none' }), 50);
+    const r2 = await call('wait', { timeoutSec: 5 });
+    expect(r2.status).toBe('sent');
+    expect(r2.browserRestarted).toBeUndefined();
   }, 15_000);
   it('status sets working text; done marks sent batches and returns count', async () => {
     core.setDrafts([{ id: 'b', note: 'n', elements: [], status: 'draft', createdAt: 't' }]);
