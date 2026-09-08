@@ -70,7 +70,7 @@ export function createPicker(opts: { root: ShadowRoot; host: HTMLElement; onPick
     window.scrollBy(e.deltaX, e.deltaY);
   }, { passive: false });
 
-  const setActive = (on: boolean) => { active = on; glass.style.display = on ? 'block' : 'none'; if (!on) { hide(); band.style.display = 'none'; dragStart = null; dragging = false; } };
+  const setActive = (on: boolean) => { active = on; suppressClick = false; glass.style.display = on ? 'block' : 'none'; if (!on) { hide(); band.style.display = 'none'; dragStart = null; dragging = false; } };
   setActive(false);
   return { setActive, isActive: () => active, destroy: () => { glass.remove(); box.remove(); badge.remove(); band.remove(); } };
 }
