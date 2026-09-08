@@ -2,10 +2,21 @@
   "name": "cobro-browser",
   "version": "0.1.0",
   "private": true,
+  "license": "Apache-2.0",
   "type": "module",
-  "bin": { "cobro-browser": "dist/server.js" },
-  "files": ["dist", "skills", "README.md"],
-  "engines": { "node": ">=20" },
+  "bin": {
+    "cobro-browser": "dist/server.js"
+  },
+  "files": [
+    "dist",
+    "skills",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "node scripts/build.mjs",
     "check": "tsc --noEmit && eslint . && node scripts/check-dist.mjs",
