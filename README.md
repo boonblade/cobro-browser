@@ -29,7 +29,8 @@ WebKit(Safari 엔진)을 쓰려면 등록 명령에 `-e COBRO_BROWSER=webkit`을
 - PowerShell:
   ```powershell
   New-Item -ItemType Directory -Force "$HOME\.claude\skills\cobro" | Out-Null
-  gh api repos/boonblade/cobro-browser/contents/skills/claude-code/SKILL.md --jq .content | ForEach-Object { [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($_)) } | Set-Content -Encoding utf8 "$HOME\.claude\skills\cobro\SKILL.md"
+  $b64 = (gh api repos/boonblade/cobro-browser/contents/skills/claude-code/SKILL.md --jq .content) -join ''
+  [IO.File]::WriteAllBytes("$HOME\.claude\skills\cobro\SKILL.md", [Convert]::FromBase64String($b64))
   ```
 - bash/zsh:
   ```bash
