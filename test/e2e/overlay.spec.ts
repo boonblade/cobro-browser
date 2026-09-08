@@ -91,3 +91,19 @@ test('reload strategy reloads the page on done', async ({ cobroPage: page, bridg
   await expect.poll(() => page.evaluate(() => (window as unknown as { __cobroPreReload?: boolean }).__cobroPreReload === undefined).catch(() => false), { timeout: 15_000 }).toBe(true);
   await expect.poll(() => page.evaluate(() => performance.getEntriesByType('navigation').length > 0 && (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming).type)).toBe('reload');
 });
+
+test('drag-select picks only the top-most fully contained element', async ({ cobroPage: page }) => {
+  await page.goto('http://127.0.0.1:4173/basic.html');
+  await expect(page.locator(`${HOST} .toolbar`)).toBeVisible();
+  await page.keyboard.press('Control+Shift+F');
+  const b = (await page.locator('#card').boundingBox())!;
+  const pad = 4; // #card를 완전히 감싸도록 바깥으로 조금 더
+  await page.mouse.move(b.x - pad, b.y - pad);
+  await page.mouse.down();
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 5 });
+  await page.mouse.move(b.x + b.width + pad, b.y + b.height + pad, { steps: 5 });
+  await page.mouse.up();
+  // 밴드에 완전히 들어온 것 중 최상위만 — 자식 p.desc·#target은 제외된다
+  await expect(page.locator(`${HOST} .els div`)).toHaveCount(1);
+  await expect(page.locator(`${HOST} .els`)).toContainText('#card');
+});

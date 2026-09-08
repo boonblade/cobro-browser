@@ -17,6 +17,8 @@ npm run build
 
 Chrome 또는 Edge가 필요하다. 둘 다 없으면 `npx playwright-core install chromium` 후 `COBRO_BROWSER_CHANNEL=chromium`.
 
+e2e(`npm run e2e`)는 Vite 호환성 픽스처를 쓴다. `e2e` 스크립트가 `npm run fixtures:install`(= `npm ci --prefix test/fixtures/vite-app`)을 먼저 돌려 알아서 채워 넣는다(이미 설치돼 있으면 금방 끝난다). 픽스처의 `node_modules`는 커밋하지 않는다.
+
 ## 호스트 등록
 
 Claude Code:

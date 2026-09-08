@@ -9,7 +9,8 @@
     "build": "node scripts/build.mjs",
     "check": "tsc --noEmit && eslint .",
     "test": "vitest run",
-    "e2e": "npm run build && playwright test",
+    "fixtures:install": "npm ci --prefix test/fixtures/vite-app",
+    "e2e": "npm run build && npm run fixtures:install && playwright test",
     "start": "node dist/server.js"
   },
   "dependencies": {

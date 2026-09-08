@@ -56,7 +56,8 @@ export class BrowserLauncher {
   }
   private async rectOfSelector(selector: string): Promise<Rect | undefined> {
     const p = this.page!;
-    const box = await p.locator(selector).first().boundingBox().catch(() => null);
+    // 기본 30초를 기다리지 않는다 — 못 찾으면 곧바로 뷰포트로 폴백하는 편이 낫다
+    const box = await p.locator(selector).first().boundingBox({ timeout: 2000 }).catch(() => null);
     if (!box) { console.error(`[cobro] screenshot: selector로 요소를 찾지 못해 뷰포트를 찍는다 — ${selector}`); return undefined; }
     // boundingBox는 뷰포트 기준 좌표 → 스크롤을 더해 페이지 좌표(clip이 쓰는 좌표계)로 바꾼다
     const scroll = await p.evaluate(() => ({ x: window.scrollX, y: window.scrollY }));
