@@ -7,6 +7,7 @@ const dir = dirname(fileURLToPath(import.meta.url));
 const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css' };
 createServer(async (req, res) => {
   const p = (req.url ?? '/').split('?')[0];
+  if (p === '/favicon.ico') { res.writeHead(204); res.end(); return; } // 브라우저의 자동 favicon 요청이 404 콘솔 에러를 남기지 않도록
   const file = join(dir, p === '/' ? 'basic.html' : p);
   try {
     const body = await readFile(file);
