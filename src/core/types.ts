@@ -1,0 +1,45 @@
+export type RefreshStrategy = 'none' | 'reload' | 'event';
+export type AgentStatus = 'idle' | 'waiting' | 'sent' | 'working' | 'done';
+export type BatchStatus = 'draft' | 'sent' | 'done' | 'unanswered';
+
+export interface Rect { x: number; y: number; w: number; h: number } // 페이지 좌표
+export interface ElementInfo {
+  selector: string; tag: string; classes: string[]; text: string; rect: Rect;
+  styles: Record<string, string>;
+  react?: { component: string; source?: string };
+  missing?: boolean; // 재주입 후 선택자로 못 찾음
+}
+export interface Batch {
+  id: string; note: string; elements: ElementInfo[]; status: BatchStatus;
+  createdAt: string; sentAt?: string; doneAt?: string; screenshot?: string; summary?: string;
+}
+export interface PageInfo { url: string; title: string; viewport: { w: number; h: number } }
+export interface Session {
+  version: 1; page: PageInfo | null; batches: Batch[];
+  agent: { status: AgentStatus; text: string };
+  strategy: RefreshStrategy | null;  // 설정·open 인자로 고정된 값
+  detected: RefreshStrategy | null;  // 오버레이 자동 감지
+}
+export interface ConsoleEntry { level: 'error' | 'warning' | 'pageerror' | 'requestfailed'; text: string; count: number; last: string }
+export interface Payload {
+  origin: 'human'; sentAt: string; page: PageInfo;
+  batches: Array<Pick<Batch, 'id' | 'note' | 'elements' | 'screenshot'>>;
+  console: ConsoleEntry[]; refreshStrategy: RefreshStrategy;
+}
+export interface DoneInfo { summary: string; selectors: string[]; changedFiles: string[] }
+
+// 오버레이 → 서버
+export type OverlayMsg =
+  | { type: 'hello'; token: string }
+  | { type: 'page'; page: PageInfo; detected: RefreshStrategy }
+  | { type: 'draft'; batches: Batch[] }            // status 'draft'인 것 전체 교체
+  | { type: 'send'; batchIds: string[]; page: PageInfo }
+  | { type: 'redo'; batchId: string }
+  | { type: 'resolved'; batchId: string; index: number; missing: boolean };
+// 서버 → 오버레이
+export type ServerMsg =
+  | { type: 'state'; session: Session }
+  | { type: 'done'; info: DoneInfo; strategy: RefreshStrategy }
+  | { type: 'error'; message: string };
+
+export type WaitResult = { status: 'sent'; payload: Payload; browserRestarted?: boolean } | { status: 'pending' };
