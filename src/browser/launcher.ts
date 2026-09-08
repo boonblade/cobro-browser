@@ -31,9 +31,13 @@ export class BrowserLauncher {
     const engine = this.opts.engine ?? 'chromium';
     if (engine !== 'chromium') {
       const type = engine === 'webkit' ? webkit : firefox;
-      this.ctx = await type.launchPersistentContext(this.opts.profileDir, {
-        headless: this.opts.headless ?? false, bypassCSP: true, viewport: null,
-      });
+      try {
+        this.ctx = await type.launchPersistentContext(this.opts.profileDir, {
+          headless: this.opts.headless ?? false, bypassCSP: true, viewport: null,
+        });
+      } catch (e) {
+        throw new Error(INSTALL_HINT + '\n' + engine + ': ' + (e as Error).message.split('\n')[0]);
+      }
     } else {
       const tried: string[] = [];
       const order = channelOrder(this.opts.channel, process.env.COBRO_BROWSER_CHANNEL);
