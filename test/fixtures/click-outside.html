@@ -1,0 +1,10 @@
+<!-- test/fixtures/click-outside.html — document pointerdown/click으로 닫히는 드롭다운 -->
+<!doctype html><html><head><title>Dropdown</title></head><body>
+<button id="toggle">menu</button>
+<ul id="menu" style="display:none;border:1px solid #333"><li id="item1">Item 1</li><li id="item2">Item 2</li></ul>
+<script>
+const menu=document.getElementById('menu');
+document.getElementById('toggle').onclick=e=>{e.stopPropagation();menu.style.display='block';};
+document.addEventListener('pointerdown',e=>{if(!menu.contains(e.target))menu.style.display='none';});
+document.addEventListener('click',e=>{if(!menu.contains(e.target))menu.style.display='none';});
+</script></body></html>

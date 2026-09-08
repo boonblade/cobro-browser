@@ -1,2 +1,101 @@
-export {};
-console.error('overlay placeholder');
+import type { Batch, PageInfo, ServerMsg, Session } from '../core/types.js';
+import { createUI } from './ui.js';
+import { createPicker } from './picker.js';
+import { installGuards } from './guard.js';
+import { connectChannel } from './channel.js';
+import { inspectElement } from './inspect.js';
+import { detectStrategy, applyDone } from './refresh.js';
+
+declare const __COBRO_PORT__: number;
+declare const __COBRO_TOKEN__: string;
+
+(() => {
+  if (window.top !== window) return; // iframe은 첫 버전 범위 밖
+  const PORT = __COBRO_PORT__; const TOKEN = __COBRO_TOKEN__;
+
+  // init script는 document가 아직 없을 수 있는 시점에 돈다 → DOM 준비 후에만 documentElement를 만진다
+  const boot = () => {
+    if (document.documentElement.hasAttribute('data-cobro')) return;
+    document.documentElement.setAttribute('data-cobro', '1');
+
+    let session: Session | null = null;
+    let drafts: Batch[] | null = null; // null = 서버 상태를 아직 못 받음
+    let current: string | null = null;
+    let unlocked = false; let connected = false;
+    let draftTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const pageInfo = (): PageInfo => ({ url: location.href, title: document.title, viewport: { w: innerWidth, h: innerHeight } });
+    const newBatch = (): Batch => ({ id: crypto.randomUUID(), note: '', elements: [], status: 'draft', createdAt: new Date().toISOString() });
+    const ensureCurrent = (): Batch => { drafts ??= []; let b = drafts.find((d) => d.id === current); if (!b) { b = newBatch(); drafts.push(b); current = b.id; } return b; };
+    const flushDraft = () => { if (draftTimer) { clearTimeout(draftTimer); draftTimer = null; } chan.send({ type: 'draft', batches: drafts ?? [] }); };
+    const pushDraft = () => { if (draftTimer) clearTimeout(draftTimer); draftTimer = setTimeout(flushDraft, 300); };
+    const vm = () => ({
+      selecting: picker.isActive(), connected, agent: session?.agent ?? { status: 'idle' as const, text: '' },
+      strategy: session ? session.strategy ?? session.detected : null, drafts: drafts ?? [], current,
+      history: (session?.batches ?? []).filter((b) => b.status !== 'draft').slice().reverse(),
+      locked: !unlocked && (session?.agent.status === 'sent' || session?.agent.status === 'working'),
+    });
+    const render = () => ui.render(vm());
+    const addEl = (b: Batch, el: Element, toggle: boolean) => {
+      const info = inspectElement(el);
+      const i = b.elements.findIndex((e) => e.selector === info.selector);
+      if (i >= 0) { if (toggle) b.elements.splice(i, 1); } else b.elements.push(info);
+    };
+    const resolveDraft = (b: Batch): Batch => ({ ...b, status: 'draft', elements: b.elements.map((e, i) => {
+      let found: Element | null = null; try { found = document.querySelector(e.selector); } catch { /* 불량 선택자 */ }
+      const missing = !found;
+      if (missing !== !!e.missing) chan.send({ type: 'resolved', batchId: b.id, index: i, missing });
+      return { ...e, missing };
+    }) });
+
+    const ui = createUI({
+      onToggleSelect: () => { picker.setActive(!picker.isActive()); render(); },
+      onNoteInput: (id, note) => { const b = drafts?.find((d) => d.id === id); if (b) { b.note = note; pushDraft(); } },
+      onSelectBatch: (id) => { current = id; render(); },
+      onAddBatch: () => { drafts ??= []; const b = newBatch(); drafts.push(b); current = b.id; pushDraft(); render(); },
+      onRemoveElement: (id, i) => { const b = drafts?.find((d) => d.id === id); if (b) { b.elements.splice(i, 1); pushDraft(); render(); } },
+      onSend: () => {
+        const ready = (drafts ?? []).filter((b) => b.elements.length && b.note.trim());
+        if (!ready.length) { ui.focusNote(); return; }
+        flushDraft();
+        chan.send({ type: 'send', batchIds: ready.map((b) => b.id), page: pageInfo() });
+        drafts = (drafts ?? []).filter((b) => !ready.includes(b)); current = null; unlocked = false;
+        picker.setActive(false); render();
+      },
+      onRedo: (id) => chan.send({ type: 'redo', batchId: id }),
+      onUnlock: () => { unlocked = true; render(); },
+    });
+    const picker = createPicker({
+      root: ui.root, host: ui.host,
+      onPick: (el) => { addEl(ensureCurrent(), el, true); pushDraft(); render(); ui.focusNote(); },
+      onBandPick: (els) => { const b = ensureCurrent(); for (const el of els) addEl(b, el, false); pushDraft(); render(); },
+    });
+    window.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.shiftKey && e.code === 'KeyF') { e.preventDefault(); picker.setActive(!picker.isActive()); render(); }
+      else if (e.key === 'Escape' && picker.isActive()) { picker.setActive(false); render(); }
+    }, true);
+    installGuards(ui.host); // 반드시 위 리스너들 뒤
+
+    const onMessage = (m: ServerMsg) => {
+      if (m.type === 'state') {
+        session = m.session;
+        const serverDrafts = m.session.batches.filter((b) => b.status === 'draft');
+        if (drafts === null) { drafts = serverDrafts.map(resolveDraft); current = drafts[drafts.length - 1]?.id ?? null; }
+        else for (const b of serverDrafts) if (!drafts.some((d) => d.id === b.id)) { drafts.push(resolveDraft(b)); current = b.id; } // redo 복제본 합류
+        render();
+      } else if (m.type === 'done') {
+        ui.flash(m.info.selectors);
+        flushDraft();
+        applyDone(m.info, m.strategy);
+      }
+    };
+    const chan = connectChannel({
+      port: PORT, token: TOKEN, onMessage,
+      onOpen: () => { connected = true; chan.send({ type: 'page', page: pageInfo(), detected: detectStrategy() }); render(); },
+      onClose: () => { connected = false; render(); },
+    });
+    render();
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();

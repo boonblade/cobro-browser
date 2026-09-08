@@ -1,0 +1,11 @@
+<!-- test/fixtures/modal-trap.html — MUI/Bootstrap식 document focusin 트랩 + Headless UI식 window 캡처 트랩 -->
+<!doctype html><html><head><title>Modal</title></head><body>
+<button id="open">open</button>
+<div id="dlg" role="dialog" style="position:fixed;inset:20% 30%;background:#fff;border:2px solid #333;padding:20px;z-index:1000;display:none">
+  <p id="dlgText">Dialog</p><input id="dlgInput"><button id="ok">OK</button></div>
+<script>
+const dlg=document.getElementById('dlg');const input=document.getElementById('dlgInput');
+const trap=e=>{if(dlg.style.display!=='none'&&!dlg.contains(e.target))input.focus();};
+document.addEventListener('focusin',trap);
+document.getElementById('open').onclick=()=>{dlg.style.display='block';window.addEventListener('focus',trap,true);input.focus();};
+</script></body></html>
