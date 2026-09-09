@@ -43,9 +43,10 @@ WebKit(Safari 엔진)을 쓰려면 등록 명령에 `-e COBRO_BROWSER=webkit`을
 git clone https://github.com/boonblade/cobro-browser.git
 cd cobro-browser
 npm i
+npm run build
 ```
 
-`dist/`가 저장소에 커밋돼 있어 `npm i` 직후 바로 실행할 수 있다(별도 빌드 불필요). 소스를 수정했으면 `npm run build`로 `dist/`를 갱신하고 커밋에 포함한다(훅이 자동으로 돌리지만, 훅이 없는 환경이면 직접 실행).
+`npm i` 뒤 `npm run build`로 `dist/`를 만든다(git에는 없다). 소스를 고쳤으면 다시 `npm run build` — `dist/server.js`를 로컬 MCP로 등록해 쓰는 경우 빌드하지 않으면 옛 산출물이 돈다. npm 패키지에는 publish 때 자동 빌드(`prepublishOnly`)돼 들어간다.
 
 Chrome 또는 Edge가 필요하다. 둘 다 없으면 `npx playwright-core install chromium` 후 `COBRO_BROWSER_CHANNEL=chromium`.
 

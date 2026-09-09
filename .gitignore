@@ -3,6 +3,7 @@
 screenshots/
 node_modules/
 test-results/
+dist/
 
 # 내부 운영 문서·작업 규칙은 비공개 cobro-internal(중첩 clone)에 있다
 internal/
