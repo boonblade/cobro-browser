@@ -31,8 +31,7 @@ declare const __COBRO_TOKEN__: string;
     const pushDraft = () => { if (draftTimer) clearTimeout(draftTimer); draftTimer = setTimeout(flushDraft, 300); };
     const vm = () => ({
       selecting: picker.isActive(), connected, agent: session?.agent ?? { status: 'idle' as const, text: '' },
-      strategy: session ? session.strategy ?? session.detected : null, drafts: drafts ?? [], current,
-      history: (session?.batches ?? []).filter((b) => b.status !== 'draft').slice().reverse(),
+      strategy: session ? session.strategy ?? session.detected : null, drafts: drafts ?? [],
       locked: !unlocked && (session?.agent.status === 'sent' || session?.agent.status === 'working'),
     });
     const render = () => ui.render(vm());
@@ -51,8 +50,6 @@ declare const __COBRO_TOKEN__: string;
     const ui = createUI({
       onToggleSelect: () => { picker.setActive(!picker.isActive()); render(); },
       onNoteInput: (id, note) => { const b = drafts?.find((d) => d.id === id); if (b) { b.note = note; pushDraft(); } },
-      onSelectBatch: (id) => { current = id; render(); },
-      onAddBatch: () => { drafts ??= []; const b = newBatch(); drafts.push(b); current = b.id; pushDraft(); render(); },
       onRemoveElement: (id, i) => { const b = drafts?.find((d) => d.id === id); if (b) { b.elements.splice(i, 1); pushDraft(); render(); } },
       onSend: () => {
         const ready = (drafts ?? []).filter((b) => b.elements.length && b.note.trim());
@@ -62,7 +59,6 @@ declare const __COBRO_TOKEN__: string;
         drafts = (drafts ?? []).filter((b) => !ready.includes(b)); current = null; unlocked = false;
         picker.setActive(false); render();
       },
-      onRedo: (id) => chan.send({ type: 'redo', batchId: id }),
       onUnlock: () => { unlocked = true; render(); },
     });
     const picker = createPicker({
@@ -86,7 +82,6 @@ declare const __COBRO_TOKEN__: string;
         if (drafts === null) { drafts = serverDrafts.map(resolveDraft); current = drafts[drafts.length - 1]?.id ?? null; }
         else {
           drafts = drafts.filter((d) => !nonDraft.has(d.id));
-          for (const b of serverDrafts) if (!nonDraft.has(b.id) && !drafts.some((d) => d.id === b.id)) { drafts.push(resolveDraft(b)); current = b.id; } // redo 복제본 합류
         }
         render();
       } else if (m.type === 'done') {

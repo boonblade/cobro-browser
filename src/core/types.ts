@@ -34,7 +34,6 @@ export type OverlayMsg =
   | { type: 'page'; page: PageInfo; detected: RefreshStrategy }
   | { type: 'draft'; batches: Batch[] }            // status 'draft'인 것 전체 교체
   | { type: 'send'; batchIds: string[]; page: PageInfo }
-  | { type: 'redo'; batchId: string }
   | { type: 'resolved'; batchId: string; index: number; missing: boolean };
 // 서버 → 오버레이
 export type ServerMsg =

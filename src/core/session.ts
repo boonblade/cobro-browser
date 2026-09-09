@@ -1,5 +1,4 @@
 import { EventEmitter } from 'node:events';
-import { randomUUID } from 'node:crypto';
 import { Store, emptySession } from './store.js';
 import type { Batch, DoneInfo, PageInfo, Payload, RefreshStrategy, Session, WaitResult } from './types.js';
 
@@ -78,13 +77,6 @@ export class SessionCore extends EventEmitter {
     this.store.pruneShots(this.s.batches.filter((b) => b.status !== 'done').map((b) => b.id));
     this.commit();
     return out;
-  }
-  redo(batchId: string): Batch | null {
-    const src = this.s.batches.find((b) => b.id === batchId && (b.status === 'done' || b.status === 'unanswered'));
-    if (!src) return null;
-    const clone: Batch = { id: randomUUID(), note: src.note, elements: src.elements.map((e) => ({ ...e })), status: 'draft', createdAt: new Date().toISOString() };
-    this.s.batches.push(clone); this.commit();
-    return clone;
   }
   markResolved(batchId: string, index: number, missing: boolean): void {
     const e = this.s.batches.find((b) => b.id === batchId)?.elements[index];

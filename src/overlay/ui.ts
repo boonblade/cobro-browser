@@ -1,7 +1,7 @@
 import type { AgentStatus, Batch, RefreshStrategy } from '../core/types.js';
 
-export interface ViewModel { selecting: boolean; connected: boolean; agent: { status: AgentStatus; text: string }; strategy: RefreshStrategy | null; drafts: Batch[]; current: string | null; history: Batch[]; locked: boolean }
-export interface UIHandlers { onToggleSelect(): void; onNoteInput(id: string, note: string): void; onSelectBatch(id: string): void; onAddBatch(): void; onRemoveElement(id: string, index: number): void; onSend(): void; onRedo(id: string): void; onUnlock(): void }
+export interface ViewModel { selecting: boolean; connected: boolean; agent: { status: AgentStatus; text: string }; strategy: RefreshStrategy | null; drafts: Batch[]; locked: boolean }
+export interface UIHandlers { onToggleSelect(): void; onNoteInput(id: string, note: string): void; onRemoveElement(id: string, index: number): void; onSend(): void; onUnlock(): void }
 
 const CSS = `
 :host{position:fixed;inset:0;margin:0;padding:0;border:0;background:transparent;width:100vw;height:100vh;overflow:visible;pointer-events:none;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;color:#e8ecf5}
@@ -41,17 +41,6 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
 .row{display:flex;justify-content:flex-end;gap:6px;align-items:center}
 .row .send{color:#fff;background:#e35d5d;border-color:#e35d5d;font-weight:700}
 .row .send:disabled{opacity:.4;cursor:not-allowed}
-.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}
-.tabs button.on{background:#3a4a72;border-color:#9db8ef;color:#fff}
-.hist{margin-top:8px;border-top:1px solid #262e47;padding-top:6px;max-height:140px;overflow:auto;font-size:12px;color:#aab6d0}
-.hist .hist-title{color:#8291b0;font-size:11px;margin-bottom:4px}
-.hist .item{display:flex;justify-content:space-between;gap:6px;align-items:flex-start;padding:4px 0;border-bottom:1px solid #1f2740}
-.hist .item:last-child{border-bottom:0}
-.hist .badge{display:inline-block;border-radius:3px;padding:0 4px;margin-right:4px;font-size:10px;color:#0e111a}
-.hist .b-done{background:#4fd18b}
-.hist .b-sent{background:#f0b429}
-.hist .b-unanswered{background:#8291b0}
-.hist .sum{display:block;color:#8291b0;font-size:11px;margin-top:2px}
 .flash{position:fixed;border:2px solid #4fd18b;border-radius:2px;pointer-events:none;animation:cobroflash 1.6s ease-out forwards}
 @keyframes cobroflash{0%{opacity:1}100%{opacity:0}}
 /* shadow root의 자식은 모두 position:fixed 형제 — picker가 glass를 toolbar/panel 뒤에 append하므로 쌓임 순서를 명시한다 */
@@ -65,7 +54,6 @@ const T = {
   ko: {
     agentIdle: '에이전트 미연결', agentWaiting: '피드백 대기 중', agentSent: '전송됨 — 에이전트 응답 대기',
     agentWorking: '수정 중', agentDone: '완료',
-    batchDraft: '초안', batchSent: '전송됨', batchDone: '처리됨', batchUnanswered: '응답 없음',
     disconnected: '연결 끊김 — 재연결 중',
     hintSend: 'Send로 전송하세요', hintClick: '페이지에서 요소를 클릭하세요 · Esc로 해제',
     hintMore: (n: number) => `요소 ${n}개 선택 · 더 고르거나 메모를 적으세요`,
@@ -73,17 +61,15 @@ const T = {
     refresh: '갱신',
     selCount: (n: number) => `요소 ${n}개 선택됨`,
     selNone: '선택된 요소 없음 · 메모만 보내도 됩니다',
-    elMissing: '요소 없음', notePlaceholder: '수정 요청 메모…', histTitle: '보낸 요청',
+    elMissing: '요소 없음', notePlaceholder: '수정 요청 메모…',
     tipSelect: '요소 선택 모드 (Ctrl+Shift+F)', tipCollapse: '패널 접기 / 펼치기',
-    tipAdd: '지금 메모를 두고 새 묶음 시작', tipSend: '선택한 요소와 메모를 에이전트에 전송',
+    tipSend: '선택한 요소와 메모를 에이전트에 전송',
     tipSendLocked: '에이전트 응답 대기 중 — Unlock으로 다시 보낼 수 있습니다',
-    tipUnlock: '에이전트 응답 없이 다시 보내기', tipRedo: '이 요청 다시 보내기', tipRemove: '이 요소 빼기',
-    tipTab: (i: number, n: number) => `묶음 #${i} · 요소 ${n}개`,
+    tipUnlock: '에이전트 응답 없이 다시 보내기', tipRemove: '이 요소 빼기',
   },
   en: {
     agentIdle: 'Agent not connected', agentWaiting: 'Waiting for your feedback', agentSent: 'Sent — waiting for the agent',
     agentWorking: 'Working', agentDone: 'Done',
-    batchDraft: 'Draft', batchSent: 'Sent', batchDone: 'Done', batchUnanswered: 'No reply',
     disconnected: 'Disconnected — reconnecting',
     hintSend: 'Press Send to deliver', hintClick: 'Click an element on the page · Esc to exit',
     hintMore: (n: number) => `${n} selected · pick more or write a note`,
@@ -91,19 +77,17 @@ const T = {
     refresh: 'refresh',
     selCount: (n: number) => `${n} element(s) selected`,
     selNone: 'No element selected · a note alone is fine',
-    elMissing: 'missing', notePlaceholder: 'Describe the change…', histTitle: 'Sent requests',
+    elMissing: 'missing', notePlaceholder: 'Describe the change…',
     tipSelect: 'Pick mode (Ctrl+Shift+F)', tipCollapse: 'Collapse / expand the panel',
-    tipAdd: 'Start a new batch, keep this note', tipSend: 'Send the selected elements and note to the agent',
+    tipSend: 'Send the selected elements and note to the agent',
     tipSendLocked: 'Waiting for the agent — use Unlock to send again',
-    tipUnlock: "Send again without the agent's reply", tipRedo: 'Send this request again', tipRemove: 'Remove this element',
-    tipTab: (i: number, n: number) => `Batch #${i} · ${n} element(s)`,
+    tipUnlock: "Send again without the agent's reply", tipRemove: 'Remove this element',
   },
 }[LANG];
 const AGENT_TEXT: Record<AgentStatus, (t: string) => string> = {
   idle: () => T.agentIdle, waiting: () => T.agentWaiting, sent: () => T.agentSent,
   working: (t) => T.agentWorking + (t ? ': ' + t : ''), done: (t) => T.agentDone + (t ? ': ' + t : ''),
 };
-const BATCH_STATUS: Record<Batch['status'], string> = { draft: T.batchDraft, sent: T.batchSent, done: T.batchDone, unanswered: T.batchUnanswered };
 const DOT_TITLE: Record<AgentStatus, string> = { idle: T.agentIdle, waiting: T.agentWaiting, sent: T.agentSent, working: T.agentWorking, done: T.agentDone };
 
 export function createUI(h: UIHandlers) {
@@ -167,7 +151,7 @@ export function createUI(h: UIHandlers) {
     const wasTa = active instanceof HTMLTextAreaElement ? active : null;
     const sel: [number, number] | null = wasTa ? [wasTa.selectionStart, wasTa.selectionEnd] : null;
     selectBtn.classList.toggle('on', vm.selecting);
-    const cur = vm.drafts.find((b) => b.id === vm.current) ?? vm.drafts[vm.drafts.length - 1];
+    const cur = vm.drafts[vm.drafts.length - 1];
     const hasElements = !!cur && cur.elements.length > 0;
     const suffix = vm.strategy ? ` · ${T.refresh}: ${vm.strategy}` : '';
     let hint: string;
@@ -192,15 +176,11 @@ export function createUI(h: UIHandlers) {
     status.classList.toggle('off', !vm.connected);
     dot.className = vm.connected ? 'dot ' + vm.agent.status : 'dot';
     dot.title = vm.connected ? DOT_TITLE[vm.agent.status] : T.disconnected;
-    const show = !collapsed && (vm.drafts.length > 0 || vm.history.length > 0);
+    const show = !collapsed && vm.drafts.length > 0;
     panel.classList.toggle('show', show);
+    if (vm.drafts.length === 0) { panel.textContent = ''; textareas.clear(); return; }
     if (!show) return;
     panel.textContent = '';
-    if (vm.drafts.length > 1) {
-      const tabs = el('div', 'tabs');
-      vm.drafts.forEach((b, i) => { const t = el('button', b === cur ? 'on' : '', `#${i + 1} (${b.elements.length})`); t.title = T.tipTab(i + 1, b.elements.length); t.onclick = () => h.onSelectBatch(b.id); tabs.append(t); });
-      panel.append(tabs);
-    }
     if (cur) {
       const h4 = el('h4');
       h4.append(el('span', 'mark', '▮'), document.createTextNode(cur.elements.length > 0 ? T.selCount(cur.elements.length) : T.selNone));
@@ -219,28 +199,12 @@ export function createUI(h: UIHandlers) {
       panel.append(ta);
     }
     const row = el('div', 'row');
-    const add = el('button', '', 'Add batch'); add.title = T.tipAdd; add.onclick = () => h.onAddBatch();
     const send = el('button', 'send', 'Send') as HTMLButtonElement; send.disabled = vm.locked;
     send.title = vm.locked ? T.tipSendLocked : T.tipSend;
     send.onclick = () => h.onSend();
-    row.append(add);
     if (vm.locked) { const unlock = el('button', '', 'Unlock'); unlock.title = T.tipUnlock; unlock.onclick = () => h.onUnlock(); row.append(unlock); }
     row.append(send);
     panel.append(row);
-    if (vm.history.length) {
-      const hist = el('div', 'hist');
-      hist.append(el('div', 'hist-title', T.histTitle));
-      for (const b of vm.history.slice(0, 20)) {
-        const item = el('div', 'item');
-        const left = el('span');
-        left.append(el('span', `badge b-${b.status}`, BATCH_STATUS[b.status]), document.createTextNode(b.note.slice(0, 60)));
-        if (b.summary) left.append(el('span', 'sum', `→ ${b.summary.slice(0, 60)}`));
-        item.append(left);
-        if (b.status === 'done' || b.status === 'unanswered') { const redo = el('button', '', 'Redo'); redo.title = T.tipRedo; redo.onclick = () => h.onRedo(b.id); item.append(redo); }
-        hist.append(item);
-      }
-      panel.append(hist);
-    }
     for (const id of [...textareas.keys()]) if (!vm.drafts.some((b) => b.id === id)) textareas.delete(id);
     // 다시 붙은 textarea가 아까 그 textarea면(= 현재 배치의 것) 포커스와 선택 범위를 되돌린다
     if (wasTa && sel && wasTa.isConnected) { wasTa.focus(); wasTa.setSelectionRange(sel[0], sel[1]); }

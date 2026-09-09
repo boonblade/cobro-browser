@@ -180,3 +180,25 @@ test('re-hovering within 200ms keeps the scroll state applied', async ({ cobroPa
   await page.waitForTimeout(300);
   await expect(inner).toHaveClass(/scroll/);
 });
+
+test('panel has no batch tabs, Add batch, or history (R64)', async ({ cobroPage: page, bridge }) => {
+  bridge.core.setStrategy('none');
+  await page.goto('http://127.0.0.1:4173/basic.html');
+  await selectAt(page, '#target');
+  await expect(page.locator(`${HOST} .panel`)).toBeVisible();
+  const buttonTexts = await page.locator(`${HOST} .panel button`).allTextContents();
+  expect(buttonTexts).not.toContain('Add batch');
+  expect(buttonTexts).not.toContain('Redo');
+  await expect(page.locator(`${HOST} .tabs`)).toHaveCount(0);
+  await expect(page.locator(`${HOST} .hist`)).toHaveCount(0);
+  await page.locator(`${HOST} textarea`).fill('x');
+  const waiting = bridge.core.wait(10_000);
+  await page.locator(`${HOST} button.send`).click();
+  const r = await waiting;
+  expect(r.status).toBe('sent');
+  if (r.status === 'sent') expect(r.payload.batches.length).toBe(1);
+  bridge.done({ summary: 'ok', selectors: [], changedFiles: [] });
+  await expect(page.locator(`${HOST} .status`)).toContainText('완료');
+  await expect(page.locator(`${HOST} .hist`)).toHaveCount(0);
+  await expect(page.locator(`${HOST} .panel`)).not.toBeVisible();
+});
