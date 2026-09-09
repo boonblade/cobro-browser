@@ -38,6 +38,11 @@ describe('mcp server version', () => {
   it('deps로 넘긴 version이 서버 정보에 나온다', () => {
     expect(client.getServerVersion()?.version).toBe('test-1.2.3');
   });
+
+  it('instructions에 운용 규약이 실린다', () => {
+    expect(client.getInstructions()).toContain('open(url)');
+    expect(client.getInstructions()).toContain('done(summary');
+  });
 });
 const call = async (name: string, args: Record<string, unknown> = {}) => {
   const r = await client.callTool({ name, arguments: args });

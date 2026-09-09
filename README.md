@@ -42,9 +42,9 @@ Chrome 또는 Edge가 필요하다. 둘 다 없으면 `npx playwright-core insta
 
 e2e(`npm run e2e`)는 Vite 호환성 픽스처를 쓴다. `e2e` 스크립트가 `npm run fixtures:install`을 먼저 돌려 알아서 채워 넣는다(`node_modules`가 이미 있으면 건너뛴다). 픽스처 lockfile이 바뀌어도 가드가 재설치를 건너뛴다 — 필요하면 `test/fixtures/vite-app/node_modules`를 지운다.
 
-### 스킬 넣기
+### 스킬(선택)
 
-운용 규약 스킬(`skills/claude-code/SKILL.md`, 이름 `cobro`)은 파일 하나를 호스트의 스킬 경로에 둔다. 소스로 쓰면 저장소 안 파일을 복사하면 되고, npm으로 쓰면 아래로 받는다:
+운용 규약은 서버가 MCP `instructions`로 호스트에 직접 준다 — **MCP 등록만으로 에이전트가 루프를 안다.** 별도 스킬 파일은 `/cobro`로 명시 호출하고 싶을 때만 둔다(`skills/claude-code/SKILL.md`, 이름 `cobro`). 소스로 쓰면 저장소 안 파일을 복사하고, npm으로 쓰면 아래로 받는다:
 
 - PowerShell:
   ```powershell
