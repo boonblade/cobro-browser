@@ -534,7 +534,7 @@ import { z } from "zod";
 var text = (v) => ({ content: [{ type: "text", text: JSON.stringify(v) }] });
 function createMcpServer(deps) {
   const { core, browser } = deps;
-  const server = new McpServer({ name: "cobro-browser", version: "0.1.0" });
+  const server = new McpServer({ name: "cobro-browser", version: deps.version });
   let restartedPending = false;
   const browserGone = () => browser.wasLaunched() && !browser.isAlive();
   server.registerTool("open", {
@@ -604,6 +604,7 @@ function createMcpServer(deps) {
 // src/server.ts
 var here = dirname(fileURLToPath(import.meta.url));
 var overlaySource = readFileSync2(join2(here, "overlay.js"), "utf8");
+var { version } = JSON.parse(readFileSync2(join2(here, "..", "package.json"), "utf8"));
 var stateDir = process.env.COBRO_STATE_DIR ?? join2(process.cwd(), ".cobro");
 var engine = parseEngine(process.env.COBRO_BROWSER);
 if (process.env.COBRO_BROWSER && engine !== process.env.COBRO_BROWSER) console.error(`[cobro] COBRO_BROWSER=${process.env.COBRO_BROWSER} \uBB34\uC2DC \u2014 chromium|webkit|firefox \uC911 \uD558\uB098. chromium \uC0AC\uC6A9`);
@@ -652,6 +653,7 @@ var mcp = createMcpServer({
   manualShotPath: (n) => store.manualShotPath(n),
   defaultWaitSec,
   tickMs,
+  version,
   onClose: async () => {
   }
 });
