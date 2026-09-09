@@ -17,7 +17,8 @@ test('빌드된 dist/server.js가 stdio로 도구 6개를 제공하고 stdin 종
   writeFileSync(join(stateDir, 'config.json'), JSON.stringify({ refreshStrategy: 'event' })); // 갱신 전략 로더
   const transport = new StdioClientTransport({
     command: process.execPath,
-    args: ['dist/server.js'],
+    args: [join(process.cwd(), 'dist/server.js')],
+    cwd: tmpdir(),
     env: {
       ...inherited,
       COBRO_HEADLESS: '1',
