@@ -99,6 +99,15 @@ describe('SessionCore', () => {
     core.setDrafts([draft('1')]); core.setAgentText('x');
     expect(fn).toHaveBeenCalledTimes(2);
   });
+  it('cancelWait resolves a pending wait as browserGone and resets agent to idle (R77)', async () => {
+    const p = core.wait(5000);
+    expect(core.cancelWait()).toBe(true);
+    await expect(p).resolves.toEqual({ status: 'pending', browserGone: true });
+    expect(core.session.agent.status).toBe('idle');
+  });
+  it('cancelWait returns false when nothing is waiting', () => {
+    expect(core.cancelWait()).toBe(false);
+  });
   it('a second wait supersedes the first: first resolves pending, second gets the payload', async () => {
     const first = core.wait(60_000);
     const second = core.wait(60_000);
