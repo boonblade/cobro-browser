@@ -23,8 +23,13 @@ const CSS = `
 .dot.sent{color:#f0b429}
 .dot.working{color:#9db8ef}
 .dot.done{color:#4fd18b}
-.status{color:#aab6d0;max-width:440px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.status{max-width:440px;overflow:hidden;color:#aab6d0}
 .status.off{color:#f0b429}
+.status-in{display:inline-block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom;transition:transform .2s ease-out}
+.status-in.scroll{max-width:none;overflow:visible;text-overflow:clip}
+.status-in.enter{animation:cobroin .15s ease-out}
+@keyframes cobroin{from{opacity:.4;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
+@media (prefers-reduced-motion: reduce){.status-in{transition:none}.status-in.enter{animation:none}}
 .panel{position:fixed;right:14px;bottom:60px;width:320px;background:#171b28;border:1px solid #e35d5d;border-radius:8px;padding:10px 12px;box-shadow:0 4px 16px rgba(0,0,0,.5);pointer-events:auto;display:none}
 .panel.show{display:block}
 .panel h4{margin:0 0 6px;color:#e8ecf5;font-size:12px;font-weight:400}
@@ -55,12 +60,51 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
 .toolbar,.panel{z-index:2}
 `;
 
-const STATUS_TEXT: Record<AgentStatus, (t: string) => string> = {
-  idle: () => '에이전트 미연결', waiting: () => '피드백 대기 중', sent: () => '전송됨 — 에이전트 응답 대기',
-  working: (t) => '수정 중' + (t ? ': ' + t : ''), done: (t) => '완료' + (t ? ': ' + t : ''),
+const LANG = navigator.language.toLowerCase().startsWith('ko') ? 'ko' : 'en';
+const T = {
+  ko: {
+    agentIdle: '에이전트 미연결', agentWaiting: '피드백 대기 중', agentSent: '전송됨 — 에이전트 응답 대기',
+    agentWorking: '수정 중', agentDone: '완료',
+    batchDraft: '초안', batchSent: '전송됨', batchDone: '처리됨', batchUnanswered: '응답 없음',
+    disconnected: '연결 끊김 — 재연결 중',
+    hintSend: 'Send로 전송하세요', hintClick: '페이지에서 요소를 클릭하세요 · Esc로 해제',
+    hintMore: (n: number) => `요소 ${n}개 선택 · 더 고르거나 메모를 적으세요`,
+    hintNote: '메모를 적고 Send를 누르세요', hintPick: 'Ctrl+Shift+F 또는 Select로 요소를 고르세요',
+    refresh: '갱신',
+    selCount: (n: number) => `요소 ${n}개 선택됨`,
+    selNone: '선택된 요소 없음 · 메모만 보내도 됩니다',
+    elMissing: '요소 없음', notePlaceholder: '수정 요청 메모…', histTitle: '보낸 요청',
+    tipSelect: '요소 선택 모드 (Ctrl+Shift+F)', tipCollapse: '패널 접기 / 펼치기',
+    tipAdd: '지금 메모를 두고 새 묶음 시작', tipSend: '선택한 요소와 메모를 에이전트에 전송',
+    tipSendLocked: '에이전트 응답 대기 중 — Unlock으로 다시 보낼 수 있습니다',
+    tipUnlock: '에이전트 응답 없이 다시 보내기', tipRedo: '이 요청 다시 보내기', tipRemove: '이 요소 빼기',
+    tipTab: (i: number, n: number) => `묶음 #${i} · 요소 ${n}개`,
+  },
+  en: {
+    agentIdle: 'Agent not connected', agentWaiting: 'Waiting for your feedback', agentSent: 'Sent — waiting for the agent',
+    agentWorking: 'Working', agentDone: 'Done',
+    batchDraft: 'Draft', batchSent: 'Sent', batchDone: 'Done', batchUnanswered: 'No reply',
+    disconnected: 'Disconnected — reconnecting',
+    hintSend: 'Press Send to deliver', hintClick: 'Click an element on the page · Esc to exit',
+    hintMore: (n: number) => `${n} selected · pick more or write a note`,
+    hintNote: 'Write a note, then press Send', hintPick: 'Press Ctrl+Shift+F or Select to pick an element',
+    refresh: 'refresh',
+    selCount: (n: number) => `${n} element(s) selected`,
+    selNone: 'No element selected · a note alone is fine',
+    elMissing: 'missing', notePlaceholder: 'Describe the change…', histTitle: 'Sent requests',
+    tipSelect: 'Pick mode (Ctrl+Shift+F)', tipCollapse: 'Collapse / expand the panel',
+    tipAdd: 'Start a new batch, keep this note', tipSend: 'Send the selected elements and note to the agent',
+    tipSendLocked: 'Waiting for the agent — use Unlock to send again',
+    tipUnlock: "Send again without the agent's reply", tipRedo: 'Send this request again', tipRemove: 'Remove this element',
+    tipTab: (i: number, n: number) => `Batch #${i} · ${n} element(s)`,
+  },
+}[LANG];
+const AGENT_TEXT: Record<AgentStatus, (t: string) => string> = {
+  idle: () => T.agentIdle, waiting: () => T.agentWaiting, sent: () => T.agentSent,
+  working: (t) => T.agentWorking + (t ? ': ' + t : ''), done: (t) => T.agentDone + (t ? ': ' + t : ''),
 };
-const BATCH_STATUS: Record<Batch['status'], string> = { draft: '초안', sent: '전송됨', done: '처리됨', unanswered: '응답 없음' };
-const DOT_TITLE: Record<AgentStatus, string> = { idle: '에이전트 미연결', waiting: '피드백 대기 중', sent: '전송됨 — 에이전트 응답 대기', working: '수정 중', done: '완료' };
+const BATCH_STATUS: Record<Batch['status'], string> = { draft: T.batchDraft, sent: T.batchSent, done: T.batchDone, unanswered: T.batchUnanswered };
+const DOT_TITLE: Record<AgentStatus, string> = { idle: T.agentIdle, waiting: T.agentWaiting, sent: T.agentSent, working: T.agentWorking, done: T.agentDone };
 
 export function createUI(h: UIHandlers) {
   const host = document.createElement('div');
@@ -69,16 +113,37 @@ export function createUI(h: UIHandlers) {
   const root = host.attachShadow({ mode: 'open' });
   const style = document.createElement('style'); style.textContent = CSS;
   const toolbar = document.createElement('div'); toolbar.className = 'toolbar';
-  const selectBtn = document.createElement('button'); selectBtn.textContent = 'Select'; selectBtn.title = '요소 선택 모드 (Ctrl+Shift+F)'; selectBtn.onclick = () => h.onToggleSelect();
+  const selectBtn = document.createElement('button'); selectBtn.textContent = 'Select'; selectBtn.title = T.tipSelect; selectBtn.onclick = () => h.onToggleSelect();
   const dot = document.createElement('span'); dot.className = 'dot'; dot.textContent = '●';
   const status = document.createElement('span'); status.className = 'status';
-  const collapseBtn = document.createElement('button'); collapseBtn.textContent = 'Collapse'; collapseBtn.title = '패널 접기 / 펼치기';
+  const statusIn = document.createElement('span'); statusIn.className = 'status-in';
+  status.append(statusIn);
+  const collapseBtn = document.createElement('button'); collapseBtn.textContent = 'Collapse'; collapseBtn.title = T.tipCollapse;
   toolbar.append(selectBtn, dot, status, collapseBtn);
   const panel = document.createElement('div'); panel.className = 'panel';
   root.append(style, toolbar, panel);
-  let collapsed = false; let lastVm: ViewModel | null = null;
+  let collapsed = false; let lastVm: ViewModel | null = null; let lastHint: string | null = null;
   collapseBtn.onclick = () => { collapsed = !collapsed; collapseBtn.textContent = collapsed ? 'Expand' : 'Collapse'; if (lastVm) render(lastVm); };
   const textareas = new Map<string, HTMLTextAreaElement>();
+
+  let leaveTimer: ReturnType<typeof setTimeout> | undefined;
+  let hovering = false;
+  const applyHoverScroll = () => {
+    const over = statusIn.scrollWidth - status.clientWidth;
+    if (over <= 0) return;
+    statusIn.classList.add('scroll');
+    statusIn.style.transitionDuration = Math.max(0.6, over / 60) + 's';
+    statusIn.style.transform = `translateX(-${over}px)`;
+  };
+  status.addEventListener('mouseenter', () => { hovering = true; applyHoverScroll(); });
+  status.addEventListener('mouseleave', () => {
+    hovering = false;
+    statusIn.style.transitionDuration = '.2s';
+    statusIn.style.transform = '';
+    clearTimeout(leaveTimer);
+    leaveTimer = setTimeout(() => statusIn.classList.remove('scroll'), 200);
+  });
+  statusIn.addEventListener('animationend', () => statusIn.classList.remove('enter'));
 
   const mount = () => {
     if (!host.isConnected) document.documentElement.append(host);
@@ -104,64 +169,67 @@ export function createUI(h: UIHandlers) {
     selectBtn.classList.toggle('on', vm.selecting);
     const cur = vm.drafts.find((b) => b.id === vm.current) ?? vm.drafts[vm.drafts.length - 1];
     const hasElements = !!cur && cur.elements.length > 0;
-    const suffix = vm.strategy ? ` · 갱신: ${vm.strategy}` : '';
+    const suffix = vm.strategy ? ` · ${T.refresh}: ${vm.strategy}` : '';
     let hint: string;
-    if (!vm.connected) hint = '연결 끊김 — 재연결 중';
-    else if (vm.agent.status === 'sent' || vm.agent.status === 'working' || vm.agent.status === 'done') hint = STATUS_TEXT[vm.agent.status](vm.agent.text) + suffix;
-    else if (hasElements && cur!.note.trim() !== '') hint = 'Send로 전송하세요' + suffix;
-    else if (vm.selecting && !hasElements) hint = '페이지에서 요소를 클릭하세요 · Esc로 해제' + suffix;
-    else if (vm.selecting) hint = `요소 ${cur!.elements.length}개 선택 · 더 고르거나 메모를 적으세요` + suffix;
-    else if (hasElements) hint = '메모를 적고 Send를 누르세요' + suffix;
-    else hint = 'Ctrl+Shift+F 또는 Select로 요소를 고르세요' + suffix;
-    status.textContent = hint;
+    if (!vm.connected) hint = T.disconnected;
+    else if (vm.agent.status === 'sent' || vm.agent.status === 'working' || vm.agent.status === 'done') hint = AGENT_TEXT[vm.agent.status](vm.agent.text) + suffix;
+    else if (hasElements && cur!.note.trim() !== '') hint = T.hintSend + suffix;
+    else if (vm.selecting && !hasElements) hint = T.hintClick + suffix;
+    else if (vm.selecting) hint = T.hintMore(cur!.elements.length) + suffix;
+    else if (hasElements) hint = T.hintNote + suffix;
+    else hint = T.hintPick + suffix;
+    if (hint !== lastHint) { lastHint = hint; statusIn.classList.add('enter'); }
+    statusIn.textContent = hint;
+    statusIn.title = hint;
+    if (hovering) applyHoverScroll();
     status.classList.toggle('off', !vm.connected);
     dot.className = vm.connected ? 'dot ' + vm.agent.status : 'dot';
-    dot.title = vm.connected ? DOT_TITLE[vm.agent.status] : '연결 끊김 — 재연결 중';
+    dot.title = vm.connected ? DOT_TITLE[vm.agent.status] : T.disconnected;
     const show = !collapsed && (vm.drafts.length > 0 || vm.history.length > 0);
     panel.classList.toggle('show', show);
     if (!show) return;
     panel.textContent = '';
     if (vm.drafts.length > 1) {
       const tabs = el('div', 'tabs');
-      vm.drafts.forEach((b, i) => { const t = el('button', b === cur ? 'on' : '', `#${i + 1} (${b.elements.length})`); t.title = `묶음 #${i + 1} · 요소 ${b.elements.length}개`; t.onclick = () => h.onSelectBatch(b.id); tabs.append(t); });
+      vm.drafts.forEach((b, i) => { const t = el('button', b === cur ? 'on' : '', `#${i + 1} (${b.elements.length})`); t.title = T.tipTab(i + 1, b.elements.length); t.onclick = () => h.onSelectBatch(b.id); tabs.append(t); });
       panel.append(tabs);
     }
     if (cur) {
       const h4 = el('h4');
-      h4.append(el('span', 'mark', '▮'), document.createTextNode(cur.elements.length > 0 ? `요소 ${cur.elements.length}개 선택됨` : '선택된 요소 없음 · 메모만 보내도 됩니다'));
+      h4.append(el('span', 'mark', '▮'), document.createTextNode(cur.elements.length > 0 ? T.selCount(cur.elements.length) : T.selNone));
       panel.append(h4);
       const list = el('div', 'els');
       cur.elements.forEach((e, i) => {
         const row = el('div', e.missing ? 'missing' : '');
-        row.append(el('span', '', `${i + 1}. ${e.selector.split(' > ').pop()}${e.react ? ' · ' + e.react.component : ''}${e.missing ? ' · 요소 없음' : ''}`));
-        const x = el('button', '', '✕'); x.title = '이 요소 빼기'; x.onclick = () => h.onRemoveElement(cur.id, i); row.append(x);
+        row.append(el('span', '', `${i + 1}. ${e.selector.split(' > ').pop()}${e.react ? ' · ' + e.react.component : ''}${e.missing ? ' · ' + T.elMissing : ''}`));
+        const x = el('button', '', '✕'); x.title = T.tipRemove; x.onclick = () => h.onRemoveElement(cur.id, i); row.append(x);
         list.append(row);
       });
       panel.append(list);
       let ta = textareas.get(cur.id);
-      if (!ta) { ta = document.createElement('textarea'); ta.placeholder = '수정 요청 메모…'; const id = cur.id; ta.addEventListener('input', () => h.onNoteInput(id, ta!.value)); textareas.set(id, ta); }
+      if (!ta) { ta = document.createElement('textarea'); ta.placeholder = T.notePlaceholder; const id = cur.id; ta.addEventListener('input', () => h.onNoteInput(id, ta!.value)); textareas.set(id, ta); }
       if (ta.value !== cur.note) ta.value = cur.note;
       panel.append(ta);
     }
     const row = el('div', 'row');
-    const add = el('button', '', 'Add batch'); add.title = '지금 메모를 두고 새 묶음 시작'; add.onclick = () => h.onAddBatch();
+    const add = el('button', '', 'Add batch'); add.title = T.tipAdd; add.onclick = () => h.onAddBatch();
     const send = el('button', 'send', 'Send') as HTMLButtonElement; send.disabled = vm.locked;
-    send.title = vm.locked ? '에이전트 응답 대기 중 — Unlock으로 다시 보낼 수 있습니다' : '선택한 요소와 메모를 에이전트에 전송';
+    send.title = vm.locked ? T.tipSendLocked : T.tipSend;
     send.onclick = () => h.onSend();
     row.append(add);
-    if (vm.locked) { const unlock = el('button', '', 'Unlock'); unlock.title = '에이전트 응답 없이 다시 보내기'; unlock.onclick = () => h.onUnlock(); row.append(unlock); }
+    if (vm.locked) { const unlock = el('button', '', 'Unlock'); unlock.title = T.tipUnlock; unlock.onclick = () => h.onUnlock(); row.append(unlock); }
     row.append(send);
     panel.append(row);
     if (vm.history.length) {
       const hist = el('div', 'hist');
-      hist.append(el('div', 'hist-title', '보낸 요청'));
+      hist.append(el('div', 'hist-title', T.histTitle));
       for (const b of vm.history.slice(0, 20)) {
         const item = el('div', 'item');
         const left = el('span');
         left.append(el('span', `badge b-${b.status}`, BATCH_STATUS[b.status]), document.createTextNode(b.note.slice(0, 60)));
         if (b.summary) left.append(el('span', 'sum', `→ ${b.summary.slice(0, 60)}`));
         item.append(left);
-        if (b.status === 'done' || b.status === 'unanswered') { const redo = el('button', '', 'Redo'); redo.title = '이 요청 다시 보내기'; redo.onclick = () => h.onRedo(b.id); item.append(redo); }
+        if (b.status === 'done' || b.status === 'unanswered') { const redo = el('button', '', 'Redo'); redo.title = T.tipRedo; redo.onclick = () => h.onRedo(b.id); item.append(redo); }
         hist.append(item);
       }
       panel.append(hist);

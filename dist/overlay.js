@@ -21,8 +21,13 @@
 .dot.sent{color:#f0b429}
 .dot.working{color:#9db8ef}
 .dot.done{color:#4fd18b}
-.status{color:#aab6d0;max-width:440px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.status{max-width:440px;overflow:hidden;color:#aab6d0}
 .status.off{color:#f0b429}
+.status-in{display:inline-block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom;transition:transform .2s ease-out}
+.status-in.scroll{max-width:none;overflow:visible;text-overflow:clip}
+.status-in.enter{animation:cobroin .15s ease-out}
+@keyframes cobroin{from{opacity:.4;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
+@media (prefers-reduced-motion: reduce){.status-in{transition:none}.status-in.enter{animation:none}}
 .panel{position:fixed;right:14px;bottom:60px;width:320px;background:#171b28;border:1px solid #e35d5d;border-radius:8px;padding:10px 12px;box-shadow:0 4px 16px rgba(0,0,0,.5);pointer-events:auto;display:none}
 .panel.show{display:block}
 .panel h4{margin:0 0 6px;color:#e8ecf5;font-size:12px;font-weight:400}
@@ -52,15 +57,82 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
 .hover-box,.hover-badge,.band,.flash{z-index:1}
 .toolbar,.panel{z-index:2}
 `;
-  var STATUS_TEXT = {
-    idle: () => "\uC5D0\uC774\uC804\uD2B8 \uBBF8\uC5F0\uACB0",
-    waiting: () => "\uD53C\uB4DC\uBC31 \uB300\uAE30 \uC911",
-    sent: () => "\uC804\uC1A1\uB428 \u2014 \uC5D0\uC774\uC804\uD2B8 \uC751\uB2F5 \uB300\uAE30",
-    working: (t) => "\uC218\uC815 \uC911" + (t ? ": " + t : ""),
-    done: (t) => "\uC644\uB8CC" + (t ? ": " + t : "")
+  var LANG = navigator.language.toLowerCase().startsWith("ko") ? "ko" : "en";
+  var T = {
+    ko: {
+      agentIdle: "\uC5D0\uC774\uC804\uD2B8 \uBBF8\uC5F0\uACB0",
+      agentWaiting: "\uD53C\uB4DC\uBC31 \uB300\uAE30 \uC911",
+      agentSent: "\uC804\uC1A1\uB428 \u2014 \uC5D0\uC774\uC804\uD2B8 \uC751\uB2F5 \uB300\uAE30",
+      agentWorking: "\uC218\uC815 \uC911",
+      agentDone: "\uC644\uB8CC",
+      batchDraft: "\uCD08\uC548",
+      batchSent: "\uC804\uC1A1\uB428",
+      batchDone: "\uCC98\uB9AC\uB428",
+      batchUnanswered: "\uC751\uB2F5 \uC5C6\uC74C",
+      disconnected: "\uC5F0\uACB0 \uB04A\uAE40 \u2014 \uC7AC\uC5F0\uACB0 \uC911",
+      hintSend: "Send\uB85C \uC804\uC1A1\uD558\uC138\uC694",
+      hintClick: "\uD398\uC774\uC9C0\uC5D0\uC11C \uC694\uC18C\uB97C \uD074\uB9AD\uD558\uC138\uC694 \xB7 Esc\uB85C \uD574\uC81C",
+      hintMore: (n) => `\uC694\uC18C ${n}\uAC1C \uC120\uD0DD \xB7 \uB354 \uACE0\uB974\uAC70\uB098 \uBA54\uBAA8\uB97C \uC801\uC73C\uC138\uC694`,
+      hintNote: "\uBA54\uBAA8\uB97C \uC801\uACE0 Send\uB97C \uB204\uB974\uC138\uC694",
+      hintPick: "Ctrl+Shift+F \uB610\uB294 Select\uB85C \uC694\uC18C\uB97C \uACE0\uB974\uC138\uC694",
+      refresh: "\uAC31\uC2E0",
+      selCount: (n) => `\uC694\uC18C ${n}\uAC1C \uC120\uD0DD\uB428`,
+      selNone: "\uC120\uD0DD\uB41C \uC694\uC18C \uC5C6\uC74C \xB7 \uBA54\uBAA8\uB9CC \uBCF4\uB0B4\uB3C4 \uB429\uB2C8\uB2E4",
+      elMissing: "\uC694\uC18C \uC5C6\uC74C",
+      notePlaceholder: "\uC218\uC815 \uC694\uCCAD \uBA54\uBAA8\u2026",
+      histTitle: "\uBCF4\uB0B8 \uC694\uCCAD",
+      tipSelect: "\uC694\uC18C \uC120\uD0DD \uBAA8\uB4DC (Ctrl+Shift+F)",
+      tipCollapse: "\uD328\uB110 \uC811\uAE30 / \uD3BC\uCE58\uAE30",
+      tipAdd: "\uC9C0\uAE08 \uBA54\uBAA8\uB97C \uB450\uACE0 \uC0C8 \uBB36\uC74C \uC2DC\uC791",
+      tipSend: "\uC120\uD0DD\uD55C \uC694\uC18C\uC640 \uBA54\uBAA8\uB97C \uC5D0\uC774\uC804\uD2B8\uC5D0 \uC804\uC1A1",
+      tipSendLocked: "\uC5D0\uC774\uC804\uD2B8 \uC751\uB2F5 \uB300\uAE30 \uC911 \u2014 Unlock\uC73C\uB85C \uB2E4\uC2DC \uBCF4\uB0BC \uC218 \uC788\uC2B5\uB2C8\uB2E4",
+      tipUnlock: "\uC5D0\uC774\uC804\uD2B8 \uC751\uB2F5 \uC5C6\uC774 \uB2E4\uC2DC \uBCF4\uB0B4\uAE30",
+      tipRedo: "\uC774 \uC694\uCCAD \uB2E4\uC2DC \uBCF4\uB0B4\uAE30",
+      tipRemove: "\uC774 \uC694\uC18C \uBE7C\uAE30",
+      tipTab: (i, n) => `\uBB36\uC74C #${i} \xB7 \uC694\uC18C ${n}\uAC1C`
+    },
+    en: {
+      agentIdle: "Agent not connected",
+      agentWaiting: "Waiting for your feedback",
+      agentSent: "Sent \u2014 waiting for the agent",
+      agentWorking: "Working",
+      agentDone: "Done",
+      batchDraft: "Draft",
+      batchSent: "Sent",
+      batchDone: "Done",
+      batchUnanswered: "No reply",
+      disconnected: "Disconnected \u2014 reconnecting",
+      hintSend: "Press Send to deliver",
+      hintClick: "Click an element on the page \xB7 Esc to exit",
+      hintMore: (n) => `${n} selected \xB7 pick more or write a note`,
+      hintNote: "Write a note, then press Send",
+      hintPick: "Press Ctrl+Shift+F or Select to pick an element",
+      refresh: "refresh",
+      selCount: (n) => `${n} element(s) selected`,
+      selNone: "No element selected \xB7 a note alone is fine",
+      elMissing: "missing",
+      notePlaceholder: "Describe the change\u2026",
+      histTitle: "Sent requests",
+      tipSelect: "Pick mode (Ctrl+Shift+F)",
+      tipCollapse: "Collapse / expand the panel",
+      tipAdd: "Start a new batch, keep this note",
+      tipSend: "Send the selected elements and note to the agent",
+      tipSendLocked: "Waiting for the agent \u2014 use Unlock to send again",
+      tipUnlock: "Send again without the agent's reply",
+      tipRedo: "Send this request again",
+      tipRemove: "Remove this element",
+      tipTab: (i, n) => `Batch #${i} \xB7 ${n} element(s)`
+    }
+  }[LANG];
+  var AGENT_TEXT = {
+    idle: () => T.agentIdle,
+    waiting: () => T.agentWaiting,
+    sent: () => T.agentSent,
+    working: (t) => T.agentWorking + (t ? ": " + t : ""),
+    done: (t) => T.agentDone + (t ? ": " + t : "")
   };
-  var BATCH_STATUS = { draft: "\uCD08\uC548", sent: "\uC804\uC1A1\uB428", done: "\uCC98\uB9AC\uB428", unanswered: "\uC751\uB2F5 \uC5C6\uC74C" };
-  var DOT_TITLE = { idle: "\uC5D0\uC774\uC804\uD2B8 \uBBF8\uC5F0\uACB0", waiting: "\uD53C\uB4DC\uBC31 \uB300\uAE30 \uC911", sent: "\uC804\uC1A1\uB428 \u2014 \uC5D0\uC774\uC804\uD2B8 \uC751\uB2F5 \uB300\uAE30", working: "\uC218\uC815 \uC911", done: "\uC644\uB8CC" };
+  var BATCH_STATUS = { draft: T.batchDraft, sent: T.batchSent, done: T.batchDone, unanswered: T.batchUnanswered };
+  var DOT_TITLE = { idle: T.agentIdle, waiting: T.agentWaiting, sent: T.agentSent, working: T.agentWorking, done: T.agentDone };
   function createUI(h) {
     const host = document.createElement("div");
     host.setAttribute("data-cobro-host", "");
@@ -72,28 +144,53 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
     toolbar.className = "toolbar";
     const selectBtn = document.createElement("button");
     selectBtn.textContent = "Select";
-    selectBtn.title = "\uC694\uC18C \uC120\uD0DD \uBAA8\uB4DC (Ctrl+Shift+F)";
+    selectBtn.title = T.tipSelect;
     selectBtn.onclick = () => h.onToggleSelect();
     const dot = document.createElement("span");
     dot.className = "dot";
     dot.textContent = "\u25CF";
     const status = document.createElement("span");
     status.className = "status";
+    const statusIn = document.createElement("span");
+    statusIn.className = "status-in";
+    status.append(statusIn);
     const collapseBtn = document.createElement("button");
     collapseBtn.textContent = "Collapse";
-    collapseBtn.title = "\uD328\uB110 \uC811\uAE30 / \uD3BC\uCE58\uAE30";
+    collapseBtn.title = T.tipCollapse;
     toolbar.append(selectBtn, dot, status, collapseBtn);
     const panel = document.createElement("div");
     panel.className = "panel";
     root.append(style, toolbar, panel);
     let collapsed = false;
     let lastVm = null;
+    let lastHint = null;
     collapseBtn.onclick = () => {
       collapsed = !collapsed;
       collapseBtn.textContent = collapsed ? "Expand" : "Collapse";
       if (lastVm) render(lastVm);
     };
     const textareas = /* @__PURE__ */ new Map();
+    let leaveTimer;
+    let hovering = false;
+    const applyHoverScroll = () => {
+      const over = statusIn.scrollWidth - status.clientWidth;
+      if (over <= 0) return;
+      statusIn.classList.add("scroll");
+      statusIn.style.transitionDuration = Math.max(0.6, over / 60) + "s";
+      statusIn.style.transform = `translateX(-${over}px)`;
+    };
+    status.addEventListener("mouseenter", () => {
+      hovering = true;
+      applyHoverScroll();
+    });
+    status.addEventListener("mouseleave", () => {
+      hovering = false;
+      statusIn.style.transitionDuration = ".2s";
+      statusIn.style.transform = "";
+      clearTimeout(leaveTimer);
+      leaveTimer = setTimeout(() => statusIn.classList.remove("scroll"), 200);
+    });
+    statusIn.addEventListener("animationend", () => statusIn.classList.remove("enter"));
     const mount = () => {
       if (!host.isConnected) document.documentElement.append(host);
       try {
@@ -133,19 +230,25 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
       selectBtn.classList.toggle("on", vm.selecting);
       const cur = vm.drafts.find((b) => b.id === vm.current) ?? vm.drafts[vm.drafts.length - 1];
       const hasElements = !!cur && cur.elements.length > 0;
-      const suffix = vm.strategy ? ` \xB7 \uAC31\uC2E0: ${vm.strategy}` : "";
+      const suffix = vm.strategy ? ` \xB7 ${T.refresh}: ${vm.strategy}` : "";
       let hint;
-      if (!vm.connected) hint = "\uC5F0\uACB0 \uB04A\uAE40 \u2014 \uC7AC\uC5F0\uACB0 \uC911";
-      else if (vm.agent.status === "sent" || vm.agent.status === "working" || vm.agent.status === "done") hint = STATUS_TEXT[vm.agent.status](vm.agent.text) + suffix;
-      else if (hasElements && cur.note.trim() !== "") hint = "Send\uB85C \uC804\uC1A1\uD558\uC138\uC694" + suffix;
-      else if (vm.selecting && !hasElements) hint = "\uD398\uC774\uC9C0\uC5D0\uC11C \uC694\uC18C\uB97C \uD074\uB9AD\uD558\uC138\uC694 \xB7 Esc\uB85C \uD574\uC81C" + suffix;
-      else if (vm.selecting) hint = `\uC694\uC18C ${cur.elements.length}\uAC1C \uC120\uD0DD \xB7 \uB354 \uACE0\uB974\uAC70\uB098 \uBA54\uBAA8\uB97C \uC801\uC73C\uC138\uC694` + suffix;
-      else if (hasElements) hint = "\uBA54\uBAA8\uB97C \uC801\uACE0 Send\uB97C \uB204\uB974\uC138\uC694" + suffix;
-      else hint = "Ctrl+Shift+F \uB610\uB294 Select\uB85C \uC694\uC18C\uB97C \uACE0\uB974\uC138\uC694" + suffix;
-      status.textContent = hint;
+      if (!vm.connected) hint = T.disconnected;
+      else if (vm.agent.status === "sent" || vm.agent.status === "working" || vm.agent.status === "done") hint = AGENT_TEXT[vm.agent.status](vm.agent.text) + suffix;
+      else if (hasElements && cur.note.trim() !== "") hint = T.hintSend + suffix;
+      else if (vm.selecting && !hasElements) hint = T.hintClick + suffix;
+      else if (vm.selecting) hint = T.hintMore(cur.elements.length) + suffix;
+      else if (hasElements) hint = T.hintNote + suffix;
+      else hint = T.hintPick + suffix;
+      if (hint !== lastHint) {
+        lastHint = hint;
+        statusIn.classList.add("enter");
+      }
+      statusIn.textContent = hint;
+      statusIn.title = hint;
+      if (hovering) applyHoverScroll();
       status.classList.toggle("off", !vm.connected);
       dot.className = vm.connected ? "dot " + vm.agent.status : "dot";
-      dot.title = vm.connected ? DOT_TITLE[vm.agent.status] : "\uC5F0\uACB0 \uB04A\uAE40 \u2014 \uC7AC\uC5F0\uACB0 \uC911";
+      dot.title = vm.connected ? DOT_TITLE[vm.agent.status] : T.disconnected;
       const show = !collapsed && (vm.drafts.length > 0 || vm.history.length > 0);
       panel.classList.toggle("show", show);
       if (!show) return;
@@ -154,7 +257,7 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
         const tabs = el("div", "tabs");
         vm.drafts.forEach((b, i) => {
           const t = el("button", b === cur ? "on" : "", `#${i + 1} (${b.elements.length})`);
-          t.title = `\uBB36\uC74C #${i + 1} \xB7 \uC694\uC18C ${b.elements.length}\uAC1C`;
+          t.title = T.tipTab(i + 1, b.elements.length);
           t.onclick = () => h.onSelectBatch(b.id);
           tabs.append(t);
         });
@@ -162,14 +265,14 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
       }
       if (cur) {
         const h4 = el("h4");
-        h4.append(el("span", "mark", "\u25AE"), document.createTextNode(cur.elements.length > 0 ? `\uC694\uC18C ${cur.elements.length}\uAC1C \uC120\uD0DD\uB428` : "\uC120\uD0DD\uB41C \uC694\uC18C \uC5C6\uC74C \xB7 \uBA54\uBAA8\uB9CC \uBCF4\uB0B4\uB3C4 \uB429\uB2C8\uB2E4"));
+        h4.append(el("span", "mark", "\u25AE"), document.createTextNode(cur.elements.length > 0 ? T.selCount(cur.elements.length) : T.selNone));
         panel.append(h4);
         const list = el("div", "els");
         cur.elements.forEach((e, i) => {
           const row2 = el("div", e.missing ? "missing" : "");
-          row2.append(el("span", "", `${i + 1}. ${e.selector.split(" > ").pop()}${e.react ? " \xB7 " + e.react.component : ""}${e.missing ? " \xB7 \uC694\uC18C \uC5C6\uC74C" : ""}`));
+          row2.append(el("span", "", `${i + 1}. ${e.selector.split(" > ").pop()}${e.react ? " \xB7 " + e.react.component : ""}${e.missing ? " \xB7 " + T.elMissing : ""}`));
           const x = el("button", "", "\u2715");
-          x.title = "\uC774 \uC694\uC18C \uBE7C\uAE30";
+          x.title = T.tipRemove;
           x.onclick = () => h.onRemoveElement(cur.id, i);
           row2.append(x);
           list.append(row2);
@@ -178,7 +281,7 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
         let ta = textareas.get(cur.id);
         if (!ta) {
           ta = document.createElement("textarea");
-          ta.placeholder = "\uC218\uC815 \uC694\uCCAD \uBA54\uBAA8\u2026";
+          ta.placeholder = T.notePlaceholder;
           const id = cur.id;
           ta.addEventListener("input", () => h.onNoteInput(id, ta.value));
           textareas.set(id, ta);
@@ -188,16 +291,16 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
       }
       const row = el("div", "row");
       const add = el("button", "", "Add batch");
-      add.title = "\uC9C0\uAE08 \uBA54\uBAA8\uB97C \uB450\uACE0 \uC0C8 \uBB36\uC74C \uC2DC\uC791";
+      add.title = T.tipAdd;
       add.onclick = () => h.onAddBatch();
       const send = el("button", "send", "Send");
       send.disabled = vm.locked;
-      send.title = vm.locked ? "\uC5D0\uC774\uC804\uD2B8 \uC751\uB2F5 \uB300\uAE30 \uC911 \u2014 Unlock\uC73C\uB85C \uB2E4\uC2DC \uBCF4\uB0BC \uC218 \uC788\uC2B5\uB2C8\uB2E4" : "\uC120\uD0DD\uD55C \uC694\uC18C\uC640 \uBA54\uBAA8\uB97C \uC5D0\uC774\uC804\uD2B8\uC5D0 \uC804\uC1A1";
+      send.title = vm.locked ? T.tipSendLocked : T.tipSend;
       send.onclick = () => h.onSend();
       row.append(add);
       if (vm.locked) {
         const unlock = el("button", "", "Unlock");
-        unlock.title = "\uC5D0\uC774\uC804\uD2B8 \uC751\uB2F5 \uC5C6\uC774 \uB2E4\uC2DC \uBCF4\uB0B4\uAE30";
+        unlock.title = T.tipUnlock;
         unlock.onclick = () => h.onUnlock();
         row.append(unlock);
       }
@@ -205,7 +308,7 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
       panel.append(row);
       if (vm.history.length) {
         const hist = el("div", "hist");
-        hist.append(el("div", "hist-title", "\uBCF4\uB0B8 \uC694\uCCAD"));
+        hist.append(el("div", "hist-title", T.histTitle));
         for (const b of vm.history.slice(0, 20)) {
           const item = el("div", "item");
           const left = el("span");
@@ -214,7 +317,7 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
           item.append(left);
           if (b.status === "done" || b.status === "unanswered") {
             const redo = el("button", "", "Redo");
-            redo.title = "\uC774 \uC694\uCCAD \uB2E4\uC2DC \uBCF4\uB0B4\uAE30";
+            redo.title = T.tipRedo;
             redo.onclick = () => h.onRedo(b.id);
             item.append(redo);
           }

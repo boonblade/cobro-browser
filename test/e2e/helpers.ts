@@ -14,8 +14,8 @@ export const test = base.extend<{ bridge: Bridge; cobroPage: Page }>({
     const bridge = await createBridge({ store: new Store(mkdtempSync(join(tmpdir(), 'cobro-'))), token: randomBytes(16).toString('hex') });
     await use(bridge); await bridge.close();
   },
-  cobroPage: async ({ browser, bridge }, use) => {
-    const ctx = await browser.newContext({ bypassCSP: true });
+  cobroPage: async ({ browser, bridge, locale }, use) => {
+    const ctx = await browser.newContext({ bypassCSP: true, locale });
     await ctx.addInitScript(injected(bridge.port, bridge.token));
     const page = await ctx.newPage();
     await use(page); await ctx.close();
