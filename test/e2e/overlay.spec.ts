@@ -8,6 +8,7 @@ test('select → note → Send arrives in core.wait with selector, then done fla
   await expect(page.locator(`${HOST} .els`)).toContainText('#target');
   await page.locator(`${HOST} textarea`).fill('버튼 작게');
   const waiting = bridge.core.wait(10_000);
+  await expect(page.locator(`${HOST} .dot`)).toHaveClass(/waiting/);
   await page.locator(`${HOST} button.send`).click();
   const r = await waiting;
   expect(r.status).toBe('sent');
