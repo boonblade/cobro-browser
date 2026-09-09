@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { channelOrder, parseEngine, chromiumLaunchOptions } from '../../src/browser/launcher.js';
+import { channelOrder, parseEngine, chromiumLaunchOptions, classifyLaunchFailure } from '../../src/browser/launcher.js';
 
 describe('channelOrder', () => {
   it('defaults to chrome, msedge, bundled', () => { expect(channelOrder(undefined, undefined)).toEqual(['chrome', 'msedge', undefined]); });
@@ -33,5 +33,26 @@ describe('chromiumLaunchOptions', () => {
     expect(o.ignoreDefaultArgs).toEqual(['--enable-automation']);
     expect(o.bypassCSP).toBe(true);
     expect(o.viewport).toBeNull();
+  });
+});
+
+describe('classifyLaunchFailure', () => {
+  const closed6 = [
+    'chrome: Target page, context or browser has been closed',
+    'chrome (no-sandbox): Target page, context or browser has been closed',
+    'msedge: Target page, context or browser has been closed',
+    'msedge (no-sandbox): Target page, context or browser has been closed',
+    'bundled: Target page, context or browser has been closed',
+    'bundled (no-sandbox): Target page, context or browser has been closed',
+  ];
+  it('전부 has been closed + 잠금 파일 있음 → profile-locked', () => {
+    expect(classifyLaunchFailure(closed6, true)).toBe('profile-locked');
+  });
+  it('전부 has been closed + 잠금 파일 없음 → not-found', () => {
+    expect(classifyLaunchFailure(closed6, false)).toBe('not-found');
+  });
+  it('1항목이 Executable doesn\'t exist면 잠금 파일이 있어도 → not-found', () => {
+    const mixed = [...closed6.slice(0, 5), "chrome: Executable doesn't exist at /x/chrome"];
+    expect(classifyLaunchFailure(mixed, true)).toBe('not-found');
   });
 });

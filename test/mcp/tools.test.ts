@@ -110,4 +110,10 @@ describe('mcp tools', () => {
     expect(await call('close')).toEqual({ ok: true });
     expect(calls).toContain('close');
   });
+  it('close resolves a pending wait immediately as browserGone (R77)', async () => {
+    const waitP = call('wait', { timeoutSec: 10 });
+    await new Promise((r) => setTimeout(r, 50)); // wait 도구가 core.wait를 건 뒤 close
+    expect(await call('close')).toEqual({ ok: true });
+    await expect(waitP).resolves.toEqual({ status: 'pending', browserGone: true });
+  });
 });

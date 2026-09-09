@@ -1,6 +1,6 @@
 export type RefreshStrategy = 'none' | 'reload' | 'event';
 export type AgentStatus = 'idle' | 'waiting' | 'sent' | 'working' | 'done';
-export type BatchStatus = 'draft' | 'sent' | 'done' | 'unanswered';
+export type BatchStatus = 'draft' | 'sent' | 'done' | 'unanswered'; // unanswered: done 없이 다음 Send가 오면 앞 묶음이 이 상태가 된다(R79)
 
 export interface Rect { x: number; y: number; w: number; h: number } // 페이지 좌표
 export interface ElementInfo {

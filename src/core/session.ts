@@ -55,7 +55,7 @@ export class SessionCore extends EventEmitter {
     if (this.waiter) { const prev = this.waiter; this.waiter = null; prev.resolve({ status: 'pending' }); }
     const queued = this.queue.shift();
     if (queued) return Promise.resolve({ status: 'sent', ...queued });
-    if (this.s.agent.status !== 'sent') { this.s.agent = { status: 'waiting', text: '' }; this.commit(); }
+    this.s.agent = { status: 'waiting', text: '' }; this.commit();
     const tickMs = opts.tickMs ?? 30_000;
     const started = Date.now();
     return new Promise<WaitResult>((resolve) => {
@@ -67,6 +67,15 @@ export class SessionCore extends EventEmitter {
       opts.signal?.addEventListener('abort', onAbort, { once: true });
       this.waiter = { resolve: wrapped };
     });
+  }
+  /** 대기 중인 wait()가 있으면 즉시 browserGone으로 풀어주고 세션을 idle로 정리한다(close() 전용, R77) */
+  cancelWait(): boolean {
+    this.s.agent = { status: 'idle', text: '' };
+    this.commit();
+    if (!this.waiter) return false;
+    const w = this.waiter; this.waiter = null;
+    w.resolve({ status: 'pending', browserGone: true });
+    return true;
   }
   setAgentText(text: string): void { this.s.agent = { status: 'working', text }; this.commit(); }
   done(info: DoneInfo): Batch[] {
