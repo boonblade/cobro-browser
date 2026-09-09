@@ -202,3 +202,33 @@ test('panel has no batch tabs, Add batch, or history (R64)', async ({ cobroPage:
   await expect(page.locator(`${HOST} .hist`)).toHaveCount(0);
   await expect(page.locator(`${HOST} .panel`)).not.toBeVisible();
 });
+
+test('handshake: Send disabled while agent works, enabled after done, no Unlock', async ({ cobroPage: page, bridge }) => {
+  bridge.core.setStrategy('none');
+  await page.goto('http://127.0.0.1:4173/basic.html');
+  await selectAt(page, '#target');
+  await page.locator(`${HOST} textarea`).fill('a');
+  const waiting1 = bridge.core.wait(10_000);
+  await page.locator(`${HOST} button.send`).click();
+  const r1 = await waiting1;
+  expect(r1.status).toBe('sent');
+  if (r1.status === 'sent') expect(r1.payload.batches[0]?.note).toBe('a');
+
+  const buttonTexts = await page.locator(`${HOST} .panel button`).allTextContents();
+  expect(buttonTexts).not.toContain('Unlock');
+  await selectAt(page, '#card');
+  await expect(page.locator(`${HOST} button.send`)).toBeDisabled();
+  await expect(page.locator(`${HOST} button.send`)).toHaveAttribute('title', /작업 중/);
+
+  bridge.done({ summary: 'ok', selectors: [], changedFiles: [] });
+  await expect(page.locator(`${HOST} button.send`)).toBeEnabled();
+
+  await page.locator(`${HOST} textarea`).fill('b');
+  const waiting2 = bridge.core.wait(10_000);
+  await page.locator(`${HOST} button.send`).click();
+  const r2 = await waiting2;
+  expect(r2.status).toBe('sent');
+  if (r2.status === 'sent') expect(r2.payload.batches[0]?.note).toBe('b');
+
+  expect(bridge.core.session.batches.filter((b) => b.status === 'unanswered')).toHaveLength(0);
+});

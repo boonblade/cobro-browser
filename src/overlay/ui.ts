@@ -1,7 +1,7 @@
 import type { AgentStatus, Batch, RefreshStrategy } from '../core/types.js';
 
 export interface ViewModel { selecting: boolean; connected: boolean; agent: { status: AgentStatus; text: string }; strategy: RefreshStrategy | null; drafts: Batch[]; locked: boolean }
-export interface UIHandlers { onToggleSelect(): void; onNoteInput(id: string, note: string): void; onRemoveElement(id: string, index: number): void; onSend(): void; onUnlock(): void }
+export interface UIHandlers { onToggleSelect(): void; onNoteInput(id: string, note: string): void; onRemoveElement(id: string, index: number): void; onSend(): void }
 
 const CSS = `
 :host{position:fixed;inset:0;margin:0;padding:0;border:0;background:transparent;width:100vw;height:100vh;overflow:visible;pointer-events:none;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;color:#e8ecf5}
@@ -64,8 +64,8 @@ const T = {
     elMissing: '요소 없음', notePlaceholder: '수정 요청 메모…',
     tipSelect: '요소 선택 모드 (Ctrl+Shift+F)', tipCollapse: '패널 접기 / 펼치기',
     tipSend: '선택한 요소와 메모를 에이전트에 전송',
-    tipSendLocked: '에이전트 응답 대기 중 — Unlock으로 다시 보낼 수 있습니다',
-    tipUnlock: '에이전트 응답 없이 다시 보내기', tipRemove: '이 요소 빼기',
+    tipSendLocked: '에이전트가 작업 중 — done 뒤에 보낼 수 있습니다',
+    tipRemove: '이 요소 빼기',
   },
   en: {
     agentIdle: 'Agent not connected', agentWaiting: 'Waiting for your feedback', agentSent: 'Sent — waiting for the agent',
@@ -80,8 +80,8 @@ const T = {
     elMissing: 'missing', notePlaceholder: 'Describe the change…',
     tipSelect: 'Pick mode (Ctrl+Shift+F)', tipCollapse: 'Collapse / expand the panel',
     tipSend: 'Send the selected elements and note to the agent',
-    tipSendLocked: 'Waiting for the agent — use Unlock to send again',
-    tipUnlock: "Send again without the agent's reply", tipRemove: 'Remove this element',
+    tipSendLocked: 'Agent is working — you can send after done',
+    tipRemove: 'Remove this element',
   },
 }[LANG];
 const AGENT_TEXT: Record<AgentStatus, (t: string) => string> = {
@@ -202,7 +202,6 @@ export function createUI(h: UIHandlers) {
     const send = el('button', 'send', 'Send') as HTMLButtonElement; send.disabled = vm.locked;
     send.title = vm.locked ? T.tipSendLocked : T.tipSend;
     send.onclick = () => h.onSend();
-    if (vm.locked) { const unlock = el('button', '', 'Unlock'); unlock.title = T.tipUnlock; unlock.onclick = () => h.onUnlock(); row.append(unlock); }
     row.append(send);
     panel.append(row);
     for (const id of [...textareas.keys()]) if (!vm.drafts.some((b) => b.id === id)) textareas.delete(id);

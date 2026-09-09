@@ -21,7 +21,7 @@ declare const __COBRO_TOKEN__: string;
     let session: Session | null = null;
     let drafts: Batch[] | null = null; // null = 서버 상태를 아직 못 받음
     let current: string | null = null;
-    let unlocked = false; let connected = false;
+    let connected = false;
     let draftTimer: ReturnType<typeof setTimeout> | null = null;
 
     const pageInfo = (): PageInfo => ({ url: location.href, title: document.title, viewport: { w: innerWidth, h: innerHeight } });
@@ -32,7 +32,7 @@ declare const __COBRO_TOKEN__: string;
     const vm = () => ({
       selecting: picker.isActive(), connected, agent: session?.agent ?? { status: 'idle' as const, text: '' },
       strategy: session ? session.strategy ?? session.detected : null, drafts: drafts ?? [],
-      locked: !unlocked && (session?.agent.status === 'sent' || session?.agent.status === 'working'),
+      locked: session?.agent.status === 'sent' || session?.agent.status === 'working',
     });
     const render = () => ui.render(vm());
     const addEl = (b: Batch, el: Element, toggle: boolean) => {
@@ -56,10 +56,9 @@ declare const __COBRO_TOKEN__: string;
         if (!ready.length) { ui.focusNote(); return; }
         flushDraft();
         chan.send({ type: 'send', batchIds: ready.map((b) => b.id), page: pageInfo() });
-        drafts = (drafts ?? []).filter((b) => !ready.includes(b)); current = null; unlocked = false;
+        drafts = (drafts ?? []).filter((b) => !ready.includes(b)); current = null;
         picker.setActive(false); render();
       },
-      onUnlock: () => { unlocked = true; render(); },
     });
     const picker = createPicker({
       root: ui.root, host: ui.host,

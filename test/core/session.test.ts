@@ -26,13 +26,25 @@ describe('SessionCore', () => {
     core.setDrafts([draft('3')]);
     expect(core.session.batches.map((b) => [b.id, b.status])).toEqual([['1', 'sent'], ['3', 'draft']]);
   });
-  it('markSent moves earlier sent to unanswered and sets agent sent', () => {
+  it('markSent leaves an earlier sent batch as sent (no unanswered) and sets agent sent', () => {
     core.setDrafts([draft('1'), draft('2')]);
     core.markSent(['1'], page);
     core.markSent(['2'], page);
     const st = Object.fromEntries(core.session.batches.map((b) => [b.id, b.status]));
-    expect(st).toEqual({ '1': 'unanswered', '2': 'sent' });
+    expect(st).toEqual({ '1': 'sent', '2': 'sent' });
     expect(core.session.agent.status).toBe('sent');
+  });
+  it('wait() unlocks: agent goes waiting even right after sent', async () => {
+    core.setDrafts([draft('1')]);
+    core.markSent(['1'], page);
+    expect(core.session.agent.status).toBe('sent');
+    const p = core.wait(1000);
+    expect(core.session.agent.status).toBe('waiting');
+    core.deliver(payloadOf(['1']));
+    await expect(p).resolves.toMatchObject({ status: 'sent', payload: { batches: [{ id: '1' }] } });
+    const doneBatches = core.done({ summary: 'ok', selectors: [], changedFiles: [] });
+    expect(doneBatches.map((b) => b.id)).toEqual(['1']);
+    expect(core.session.agent.status).toBe('done');
   });
   it('wait resolves with delivered payload, ticks, and sets waiting', async () => {
     vi.useFakeTimers();
