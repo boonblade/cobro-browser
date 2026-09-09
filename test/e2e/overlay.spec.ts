@@ -15,6 +15,7 @@ test('select → note → Send arrives in core.wait with selector, then done fla
   expect(r.payload.batches[0]).toMatchObject({ note: '버튼 작게', elements: [{ selector: '#target', tag: 'button' }] });
   expect(r.payload.page.url).toContain('basic.html');
   await expect(page.locator(`${HOST} .status`)).toContainText('전송됨');
+  await expect(page.locator(`${HOST} .dot`)).toHaveClass(/sent/);
   await expect(page.locator(`${HOST} .els`)).toHaveCount(0); // 보낸 배치가 좀비 draft로 되살아나면 안 된다
   bridge.done({ summary: '폰트 12px', selectors: ['#target'], changedFiles: ['x.tsx'] });
   await expect(page.locator(`${HOST} .status`)).toContainText('완료');
@@ -117,6 +118,8 @@ test('toolbar hint guides the next action', async ({ cobroPage: page }) => {
   await page.mouse.move(b.x + 3, b.y + 3);
   await page.mouse.click(b.x + 3, b.y + 3);
   await expect(page.locator(`${HOST} .status`)).toContainText('요소 1개 선택');
+  await page.keyboard.press('Escape');
+  await expect(page.locator(`${HOST} .status`)).toContainText('메모를 적고 Send');
   await page.keyboard.type('x');
   await expect(page.locator(`${HOST} .status`)).toContainText('Send로 전송하세요');
 });

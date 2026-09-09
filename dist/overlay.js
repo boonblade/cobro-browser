@@ -16,7 +16,12 @@
 .toolbar button.on{color:#fff;background:#e35d5d;border-color:#e35d5d}
 .els button{background:transparent;border-color:transparent;color:#8291b0;padding:0 6px}
 .els button:hover{background:#2e3a58;color:#fff}
-.status{color:#aab6d0;max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dot{font-size:9px;line-height:1;color:#8291b0}
+.dot.waiting{color:#4fd18b}
+.dot.sent{color:#f0b429}
+.dot.working{color:#9db8ef}
+.dot.done{color:#4fd18b}
+.status{color:#aab6d0;max-width:440px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .status.off{color:#f0b429}
 .panel{position:fixed;right:14px;bottom:60px;width:320px;background:#171b28;border:1px solid #e35d5d;border-radius:8px;padding:10px 12px;box-shadow:0 4px 16px rgba(0,0,0,.5);pointer-events:auto;display:none}
 .panel.show{display:block}
@@ -25,13 +30,12 @@
 .els{max-height:110px;overflow:auto;margin-bottom:8px;color:#aab6d0;font-size:11px}
 .els div{display:flex;justify-content:space-between;gap:6px;word-break:break-all}
 .els .missing{color:#f0b429}
-.els button{padding:0 6px}
 textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;background:#0e111a;border:1px solid #3a4a72;border-radius:4px;padding:4px 6px;margin-bottom:8px}
 .row{display:flex;justify-content:flex-end;gap:6px;align-items:center}
 .row .send{color:#fff;background:#e35d5d;border-color:#e35d5d;font-weight:700}
 .row .send:disabled{opacity:.4;cursor:not-allowed}
 .tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}
-.tabs button.on{background:#232c42;color:#fff}
+.tabs button.on{background:#3a4a72;border-color:#9db8ef;color:#fff}
 .hist{margin-top:8px;border-top:1px solid #262e47;padding-top:6px;max-height:140px;overflow:auto;font-size:12px;color:#aab6d0}
 .hist .hist-title{color:#8291b0;font-size:11px;margin-bottom:4px}
 .hist .item{display:flex;justify-content:space-between;gap:6px;align-items:flex-start;padding:4px 0;border-bottom:1px solid #1f2740}
@@ -56,6 +60,7 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
     done: (t) => "\uC644\uB8CC" + (t ? ": " + t : "")
   };
   var BATCH_STATUS = { draft: "\uCD08\uC548", sent: "\uC804\uC1A1\uB428", done: "\uCC98\uB9AC\uB428", unanswered: "\uC751\uB2F5 \uC5C6\uC74C" };
+  var DOT_TITLE = { idle: "\uC5D0\uC774\uC804\uD2B8 \uBBF8\uC5F0\uACB0", waiting: "\uD53C\uB4DC\uBC31 \uB300\uAE30 \uC911", sent: "\uC804\uC1A1\uB428 \u2014 \uC5D0\uC774\uC804\uD2B8 \uC751\uB2F5 \uB300\uAE30", working: "\uC218\uC815 \uC911", done: "\uC644\uB8CC" };
   function createUI(h) {
     const host = document.createElement("div");
     host.setAttribute("data-cobro-host", "");
@@ -69,12 +74,15 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
     selectBtn.textContent = "Select";
     selectBtn.title = "\uC694\uC18C \uC120\uD0DD \uBAA8\uB4DC (Ctrl+Shift+F)";
     selectBtn.onclick = () => h.onToggleSelect();
+    const dot = document.createElement("span");
+    dot.className = "dot";
+    dot.textContent = "\u25CF";
     const status = document.createElement("span");
     status.className = "status";
     const collapseBtn = document.createElement("button");
     collapseBtn.textContent = "Collapse";
     collapseBtn.title = "\uD328\uB110 \uC811\uAE30 / \uD3BC\uCE58\uAE30";
-    toolbar.append(selectBtn, status, collapseBtn);
+    toolbar.append(selectBtn, dot, status, collapseBtn);
     const panel = document.createElement("div");
     panel.className = "panel";
     root.append(style, toolbar, panel);
@@ -136,6 +144,8 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
       else hint = "Ctrl+Shift+F \uB610\uB294 Select\uB85C \uC694\uC18C\uB97C \uACE0\uB974\uC138\uC694" + suffix;
       status.textContent = hint;
       status.classList.toggle("off", !vm.connected);
+      dot.className = vm.connected ? "dot " + vm.agent.status : "dot";
+      dot.title = vm.connected ? DOT_TITLE[vm.agent.status] : "\uC5F0\uACB0 \uB04A\uAE40 \u2014 \uC7AC\uC5F0\uACB0 \uC911";
       const show = !collapsed && (vm.drafts.length > 0 || vm.history.length > 0);
       panel.classList.toggle("show", show);
       if (!show) return;
