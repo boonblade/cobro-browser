@@ -12,6 +12,8 @@
 
 Cobro는 MCP 서버다. **호스트**(Claude Code·Codex·Cursor처럼 MCP 서버를 실행하는 쪽)에 `claude mcp add`로 등록하면, 호스트가 세션마다 서버를 stdio로 띄우고 세션이 끝나면 브라우저까지 함께 정리한다. 서버를 직접 실행할 일은 없다.
 
+**등록은 이 PC에서 한 번이다.** `-s user`로 등록하면 어느 저장소에서 세션을 열든 호스트가 cobro를 띄운다(생략하면 현재 폴더에서만 보이는 등록이 된다). 스킬도 사용자 스킬 경로에 한 번 두면 끝. 상태 파일 `.cobro/`는 작업 중인 저장소마다 따로 생기고, 브라우저 프로필(`~/.cobro/profile/`)은 공유라 로그인은 한 번만 한다.
+
 가져오는 방식이 둘이고, 등록 명령만 다르다.
 
 ### npm으로 쓰기(권장)
@@ -31,10 +33,10 @@ git clone https://github.com/boonblade/cobro-browser.git
 cd cobro-browser
 npm i
 npm run build
-claude mcp add cobro-browser -- node "$PWD/dist/server.js"
+claude mcp add -s user cobro-browser -- node "$PWD/dist/server.js"
 ```
 
-`dist/`는 git에 없다 — clone 직후와 소스를 고친 뒤에 `npm run build`. 로컬 경로로 등록했으면 빌드하지 않으면 옛 산출물이 돈다. npm 패키지에는 publish 때 자동 빌드(`prepublishOnly`)돼 들어간다.
+`dist/`는 git에 없다 — clone 직후와 소스를 고친 뒤에 `npm run build`. 절대 경로로 등록되므로 clone 폴더를 옮기면 다시 등록한다. 빌드하지 않으면 옛 산출물이 돈다. npm 패키지에는 publish 때 자동 빌드(`prepublishOnly`)돼 들어간다.
 
 Chrome 또는 Edge가 필요하다. 둘 다 없으면 `npx playwright-core install chromium` 후 `COBRO_BROWSER_CHANNEL=chromium`. WebKit 검증용은 `npx playwright-core install webkit` 후 `COBRO_BROWSER=webkit`.
 
