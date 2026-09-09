@@ -8,6 +8,7 @@ import { Store } from './core/store.js';
 import { createBridge } from './bridge.js';
 import { BrowserLauncher, parseEngine } from './browser/launcher.js';
 import { createMcpServer } from './mcp/server.js';
+import { startParentWatch } from './parent-watch.js';
 import type { RefreshStrategy, Rect } from './core/types.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -74,3 +75,4 @@ const shutdown = async () => {
 };
 process.on('SIGINT', shutdown); process.on('SIGTERM', shutdown);
 process.stdin.on('close', shutdown); // 호스트가 stdio를 닫으면 브라우저도 거둔다
+startParentWatch({ isParentAlive: () => { try { process.kill(process.ppid, 0); return true; } catch { return false; } }, onDead: shutdown, intervalMs: 5000 });
