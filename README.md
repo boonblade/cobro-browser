@@ -10,19 +10,39 @@
 
 ## 설치
 
-### ① 사용자 설치(권장)
+Cobro는 MCP 서버다. **호스트**(Claude Code·Codex·Cursor처럼 MCP 서버를 실행하는 쪽)에 `claude mcp add`로 등록하면, 호스트가 세션마다 서버를 stdio로 띄우고 세션이 끝나면 브라우저까지 함께 정리한다. 서버를 직접 실행할 일은 없다.
+
+가져오는 방식이 둘이고, 등록 명령만 다르다.
+
+### npm으로 쓰기(권장)
 
 ```bash
 claude mcp add -s user cobro-browser -- npx -y cobro-browser@latest
 ```
 
-npm 레지스트리에서 받는다. 빌드 산출물이 패키지에 들어 있어 별도 빌드가 없고, `@latest`라 다음 시작 때 최신 버전을 쓴다. 전역 설치(`npm i -g cobro-browser` 후 `claude mcp add -s user cobro-browser -- cobro-browser`)도 된다.
+한 줄이 등록과 설치를 같이 한다 — `npx`가 레지스트리에서 받아 실행하고, `@latest`라 다음 시작 때 최신 버전을 쓴다. 첫 시작 5초 안팎. 전역 설치(`npm i -g cobro-browser` 후 `claude mcp add -s user cobro-browser -- cobro-browser`)도 된다.
 
-WebKit(Safari 엔진)을 쓰려면 등록 명령에 `-e COBRO_BROWSER=webkit`을 추가한다.
+WebKit(Safari 엔진)을 쓰려면 등록 명령에 `-e COBRO_BROWSER=webkit`을 추가한다. 다른 호스트는 같은 실행 명령(`npx -y cobro-browser@latest`)을 stdio MCP 서버로 등록한다.
 
-다른 호스트는 같은 명령(`npx -y cobro-browser@latest`)을 stdio MCP 서버로 등록한다. 서버는 호스트가 실행하고, 호스트가 stdio를 닫으면 브라우저까지 함께 정리된다.
+### 소스로 쓰기
 
-운용 규약 스킬(`skills/claude-code/SKILL.md`, 이름 `cobro`)은 파일 하나를 호스트의 스킬 경로에 둔다:
+```bash
+git clone https://github.com/boonblade/cobro-browser.git
+cd cobro-browser
+npm i
+npm run build
+claude mcp add cobro-browser -- node "$PWD/dist/server.js"
+```
+
+`dist/`는 git에 없다 — clone 직후와 소스를 고친 뒤에 `npm run build`. 로컬 경로로 등록했으면 빌드하지 않으면 옛 산출물이 돈다. npm 패키지에는 publish 때 자동 빌드(`prepublishOnly`)돼 들어간다.
+
+Chrome 또는 Edge가 필요하다. 둘 다 없으면 `npx playwright-core install chromium` 후 `COBRO_BROWSER_CHANNEL=chromium`. WebKit 검증용은 `npx playwright-core install webkit` 후 `COBRO_BROWSER=webkit`.
+
+e2e(`npm run e2e`)는 Vite 호환성 픽스처를 쓴다. `e2e` 스크립트가 `npm run fixtures:install`을 먼저 돌려 알아서 채워 넣는다(`node_modules`가 이미 있으면 건너뛴다). 픽스처 lockfile이 바뀌어도 가드가 재설치를 건너뛴다 — 필요하면 `test/fixtures/vite-app/node_modules`를 지운다.
+
+### 스킬 넣기
+
+운용 규약 스킬(`skills/claude-code/SKILL.md`, 이름 `cobro`)은 파일 하나를 호스트의 스킬 경로에 둔다. 소스로 쓰면 저장소 안 파일을 복사하면 되고, npm으로 쓰면 아래로 받는다:
 
 - PowerShell:
   ```powershell
@@ -36,37 +56,6 @@ WebKit(Safari 엔진)을 쓰려면 등록 명령에 `-e COBRO_BROWSER=webkit`을
   ```
 
 복사해 두면 `/cobro`로 부를 수 있다.
-
-### ② 개발자 설치
-
-```bash
-git clone https://github.com/boonblade/cobro-browser.git
-cd cobro-browser
-npm i
-npm run build
-```
-
-`npm i` 뒤 `npm run build`로 `dist/`를 만든다(git에는 없다). 소스를 고쳤으면 다시 `npm run build` — `dist/server.js`를 로컬 MCP로 등록해 쓰는 경우 빌드하지 않으면 옛 산출물이 돈다. npm 패키지에는 publish 때 자동 빌드(`prepublishOnly`)돼 들어간다.
-
-Chrome 또는 Edge가 필요하다. 둘 다 없으면 `npx playwright-core install chromium` 후 `COBRO_BROWSER_CHANNEL=chromium`.
-
-WebKit(Safari 엔진) 검증용으로 쓰려면 `npx playwright-core install webkit` 후 `COBRO_BROWSER=webkit`.
-
-e2e(`npm run e2e`)는 Vite 호환성 픽스처를 쓴다. `e2e` 스크립트가 `npm run fixtures:install`을 먼저 돌려 알아서 채워 넣는다(`node_modules`가 이미 있으면 건너뛴다). 픽스처 lockfile이 바뀌어도 가드가 재설치를 건너뛴다 — 필요하면 사람이 `test/fixtures/vite-app/node_modules`를 지운다. 픽스처의 `node_modules`는 커밋하지 않는다.
-
-등록 절차는 아래 「호스트 등록」 절을 따른다(로컬 절대경로로 등록).
-
-## 호스트 등록
-
-Claude Code:
-
-```bash
-claude mcp add cobro-browser -- node /절대경로/cobro-browser/dist/server.js
-```
-
-다른 호스트는 같은 명령(`node <절대경로>/dist/server.js`)을 stdio MCP 서버로 등록한다. 서버는 호스트가 실행하고, 호스트가 stdio를 닫으면 브라우저까지 함께 정리된다.
-
-운용 규약 스킬은 `skills/claude-code/SKILL.md`(이름 `cobro`). 호스트의 스킬 경로에 두면 `/cobro`로 부를 수 있다.
 
 ## 사용 루프
 
