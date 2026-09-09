@@ -170,11 +170,13 @@ test('re-hovering within 200ms keeps the scroll state applied', async ({ cobroPa
   bridge.core.setAgentText('x'.repeat(200));
   await expect.poll(() => page.locator(`${HOST} .status`).textContent()).toContain('x'.repeat(200));
   const inner = page.locator(`${HOST} .status-in`);
-  await page.locator(`${HOST} .status`).hover();
+  const box = (await page.locator(`${HOST} .status`).boundingBox())!;
+  const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
+  await page.mouse.move(cx, cy);
   await expect(inner).toHaveClass(/scroll/);
   await page.mouse.move(0, 0);
-  await page.waitForTimeout(100);
-  await page.locator(`${HOST} .status`).hover();
+  await page.waitForTimeout(50);
+  await page.mouse.move(cx, cy);
   await page.waitForTimeout(300);
   await expect(inner).toHaveClass(/scroll/);
 });

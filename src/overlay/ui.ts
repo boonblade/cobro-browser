@@ -188,7 +188,7 @@ export function createUI(h: UIHandlers) {
     }
     statusIn.textContent = hint;
     statusIn.title = hint;
-    if (hovering) applyHoverScroll();
+    if (hovering) { applyHoverScroll(); if (statusIn.classList.contains('scroll')) statusIn.classList.remove('enter'); }
     status.classList.toggle('off', !vm.connected);
     dot.className = vm.connected ? 'dot ' + vm.agent.status : 'dot';
     dot.title = vm.connected ? DOT_TITLE[vm.agent.status] : T.disconnected;
