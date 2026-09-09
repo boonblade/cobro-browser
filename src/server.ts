@@ -12,6 +12,7 @@ import type { RefreshStrategy, Rect } from './core/types.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const overlaySource = readFileSync(join(here, 'overlay.js'), 'utf8'); // build가 server.js 옆에 둔다
+const { version } = JSON.parse(readFileSync(join(here, '..', 'package.json'), 'utf8')) as { version: string };
 const stateDir = process.env.COBRO_STATE_DIR ?? join(process.cwd(), '.cobro');
 const engine = parseEngine(process.env.COBRO_BROWSER);
 if (process.env.COBRO_BROWSER && engine !== process.env.COBRO_BROWSER) console.error(`[cobro] COBRO_BROWSER=${process.env.COBRO_BROWSER} 무시 — chromium|webkit|firefox 중 하나. chromium 사용`);
@@ -58,7 +59,7 @@ if (fixed) bridge.core.setStrategy(fixed);
 launcher = new BrowserLauncher({ overlaySource, port: bridge.port, token, profileDir, headless: process.env.COBRO_HEADLESS === '1', engine });
 
 const mcp = createMcpServer({
-  core: bridge.core, browser: launcher, done: (info) => bridge.done(info), manualShotPath: (n) => store.manualShotPath(n), defaultWaitSec, tickMs,
+  core: bridge.core, browser: launcher, done: (info) => bridge.done(info), manualShotPath: (n) => store.manualShotPath(n), defaultWaitSec, tickMs, version,
   onClose: async () => { /* 브라우저만 닫는다. 프로세스는 호스트가 관리 */ },
 });
 await mcp.connect(new StdioServerTransport());

@@ -26,13 +26,19 @@ beforeEach(async () => {
     isAlive: () => state.alive,
     wasLaunched: () => state.launched,
   };
-  const server = createMcpServer({ core, browser, manualShotPath: (n) => `/s/manual/${n}.png`, done: (info) => core.done(info), defaultWaitSec: 1 });
+  const server = createMcpServer({ core, browser, manualShotPath: (n) => `/s/manual/${n}.png`, done: (info) => core.done(info), defaultWaitSec: 1, version: 'test-1.2.3' });
   const [ct, st] = InMemoryTransport.createLinkedPair();
   client = new Client({ name: 't', version: '0' });
   await server.connect(st); await client.connect(ct);
   closeAll = async () => { await client.close(); await server.close(); };
 });
 afterEach(() => closeAll());
+
+describe('mcp server version', () => {
+  it('deps로 넘긴 version이 서버 정보에 나온다', () => {
+    expect(client.getServerVersion()?.version).toBe('test-1.2.3');
+  });
+});
 const call = async (name: string, args: Record<string, unknown> = {}) => {
   const r = await client.callTool({ name, arguments: args });
   return JSON.parse((r.content as Array<{ text: string }>)[0]!.text);
