@@ -14,6 +14,19 @@ export function channelOrder(explicit: string | undefined, env: string | undefin
   return [...named, undefined];
 }
 
+/** chromium 실행 옵션. 샌드박스는 켜는 것이 기본이고, 못 뜨는 환경에서만 호출자가 sandbox=false로 한 번 더 부른다 */
+export function chromiumLaunchOptions(o: { headless: boolean; channel: string | undefined; sandbox: boolean }) {
+  return {
+    headless: o.headless,
+    channel: o.channel === 'chromium' ? undefined : o.channel,
+    bypassCSP: true,
+    viewport: null,
+    args: ['--disable-infobars'],
+    ignoreDefaultArgs: ['--enable-automation'],
+    chromiumSandbox: o.sandbox,
+  };
+}
+
 export class BrowserLauncher {
   private ctx: BrowserContext | null = null;
   page: Page | null = null;
@@ -41,14 +54,19 @@ export class BrowserLauncher {
     } else {
       const tried: string[] = [];
       const order = channelOrder(this.opts.channel, process.env.COBRO_BROWSER_CHANNEL);
-      for (const channel of order) {
-        try {
-          this.ctx = await chromium.launchPersistentContext(this.opts.profileDir, {
-            headless: this.opts.headless ?? false, channel: channel === 'chromium' ? undefined : channel,
-            bypassCSP: true, viewport: null, args: ['--disable-infobars'], ignoreDefaultArgs: ['--enable-automation'],
-          });
+      for (const sandbox of [true, false]) {
+        for (const channel of order) {
+          try {
+            this.ctx = await chromium.launchPersistentContext(this.opts.profileDir, chromiumLaunchOptions({
+              headless: this.opts.headless ?? false, channel, sandbox,
+            }));
+            break;
+          } catch (e) { tried.push(`${channel ?? 'bundled'}${sandbox ? '' : ' (no-sandbox)'}: ${(e as Error).message.split('\n')[0]}`); this.ctx = null; }
+        }
+        if (this.ctx) {
+          if (!sandbox) console.error('[cobro] Chromium 샌드박스를 켜고 띄우지 못해 --no-sandbox로 실행한다 — 브라우저가 경고 줄을 표시한다');
           break;
-        } catch (e) { tried.push(`${channel ?? 'bundled'}: ${(e as Error).message.split('\n')[0]}`); this.ctx = null; }
+        }
       }
       if (!this.ctx) throw new Error(INSTALL_HINT + '\n' + tried.join('\n'));
     }
