@@ -41,6 +41,7 @@ describe('mcp server version', () => {
 
   it('instructions에 운용 규약이 실린다', () => {
     expect(client.getInstructions()).toContain('open(url)');
+    expect(client.getInstructions()).toContain('done(summary');
   });
 });
 const call = async (name: string, args: Record<string, unknown> = {}) => {

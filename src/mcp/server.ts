@@ -20,7 +20,7 @@ const INSTRUCTIONS = [
   '4. status("수정 중: <파일>") 한 번 → 소스 수정 → 반드시 done(summary, selectors, changedFiles). 안 하면 사용자 화면이 "전송됨"에 머문다. 수정하지 않기로 했어도 이유를 summary로 done.',
   '5. 다시 wait. 사용자가 끝내자고 하면 close().',
   '호스트: Claude Code는 wait가 2분 뒤 자동 백그라운드로 넘어가고 완료 알림으로 결과가 온다. Cursor·Codex는 wait({ timeoutSec: 50 })로 pending을 반복한다.',
-  '사용자 안내: 페이지에서 Ctrl+Shift+F로 선택 모드, Esc로 해제. 화면 확인을 사용자에게 떠넘기지 말 것 — 확인은 done 뒤 사용자의 다음 Send가 한다.',
+  '화면 확인을 사용자에게 떠넘기지 말 것 — 확인은 done 뒤 사용자의 다음 Send가 한다.',
 ].join('\n');
 
 export function createMcpServer(deps: { core: SessionCore; browser: BrowserLike; done(info: DoneInfo): Batch[]; manualShotPath(name: string): string; version: string; defaultWaitSec?: number; tickMs?: number; onClose?: () => Promise<void> }): McpServer {
