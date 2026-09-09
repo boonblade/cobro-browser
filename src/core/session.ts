@@ -32,6 +32,7 @@ export class SessionCore extends EventEmitter {
     const now = new Date().toISOString();
     const sent: Batch[] = [];
     for (const b of this.s.batches) {
+      if (b.status === 'sent') b.status = 'unanswered';
       if (b.status === 'draft' && batchIds.includes(b.id)) { b.status = 'sent'; b.sentAt = now; sent.push(b); }
     }
     this.s.page = page; this.s.agent = { status: 'sent', text: '' };
@@ -69,11 +70,11 @@ export class SessionCore extends EventEmitter {
   }
   /** 대기 중인 wait()가 있으면 즉시 browserGone으로 풀어주고 세션을 idle로 정리한다(close() 전용, R77) */
   cancelWait(): boolean {
+    this.s.agent = { status: 'idle', text: '' };
+    this.commit();
     if (!this.waiter) return false;
     const w = this.waiter; this.waiter = null;
     w.resolve({ status: 'pending', browserGone: true });
-    this.s.agent = { status: 'idle', text: '' };
-    this.commit();
     return true;
   }
   setAgentText(text: string): void { this.s.agent = { status: 'working', text }; this.commit(); }

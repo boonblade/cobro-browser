@@ -75,4 +75,5 @@ const shutdown = async () => {
 };
 process.on('SIGINT', shutdown); process.on('SIGTERM', shutdown);
 process.stdin.on('close', shutdown); // 호스트가 stdio를 닫으면 브라우저도 거둔다
-startParentWatch({ isParentAlive: () => { try { process.kill(process.ppid, 0); return true; } catch { return false; } }, onDead: shutdown, intervalMs: 5000 });
+const ppid = process.ppid; // 루트 컨테이너 재부모화 대비 — ppid가 바뀌면(예: 1로) 더 이상 원래 부모가 아니다(M3)
+startParentWatch({ isParentAlive: () => { if (process.ppid !== ppid) return false; try { process.kill(ppid, 0); return true; } catch { return false; } }, onDead: shutdown, intervalMs: 5000 });

@@ -26,12 +26,12 @@ describe('SessionCore', () => {
     core.setDrafts([draft('3')]);
     expect(core.session.batches.map((b) => [b.id, b.status])).toEqual([['1', 'sent'], ['3', 'draft']]);
   });
-  it('markSent leaves an earlier sent batch as sent (no unanswered) and sets agent sent', () => {
+  it('markSent moves earlier sent to unanswered and sets agent sent (R79)', () => {
     core.setDrafts([draft('1'), draft('2')]);
     core.markSent(['1'], page);
     core.markSent(['2'], page);
     const st = Object.fromEntries(core.session.batches.map((b) => [b.id, b.status]));
-    expect(st).toEqual({ '1': 'sent', '2': 'sent' });
+    expect(st).toEqual({ '1': 'unanswered', '2': 'sent' });
     expect(core.session.agent.status).toBe('sent');
   });
   it('wait() unlocks: agent goes waiting even right after sent', async () => {
@@ -107,6 +107,11 @@ describe('SessionCore', () => {
   });
   it('cancelWait returns false when nothing is waiting', () => {
     expect(core.cancelWait()).toBe(false);
+  });
+  it('cancelWait resets agent to idle even when nothing is waiting (M1)', () => {
+    core.setAgentText('수정 중');
+    expect(core.cancelWait()).toBe(false);
+    expect(core.session.agent.status).toBe('idle');
   });
   it('a second wait supersedes the first: first resolves pending, second gets the payload', async () => {
     const first = core.wait(60_000);
