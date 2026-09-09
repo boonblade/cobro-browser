@@ -174,12 +174,18 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
     let hovering = false;
     const applyHoverScroll = () => {
       const over = statusIn.scrollWidth - status.clientWidth;
-      if (over <= 0) return;
+      if (over <= 0) {
+        statusIn.classList.remove("scroll");
+        statusIn.style.transform = "";
+        statusIn.style.transitionDuration = "";
+        return;
+      }
       statusIn.classList.add("scroll");
       statusIn.style.transitionDuration = Math.max(0.6, over / 60) + "s";
       statusIn.style.transform = `translateX(-${over}px)`;
     };
     status.addEventListener("mouseenter", () => {
+      clearTimeout(leaveTimer);
       hovering = true;
       applyHoverScroll();
     });
@@ -241,7 +247,11 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
       else hint = T.hintPick + suffix;
       if (hint !== lastHint) {
         lastHint = hint;
-        statusIn.classList.add("enter");
+        if (!statusIn.classList.contains("scroll")) {
+          statusIn.classList.remove("enter");
+          void statusIn.offsetWidth;
+          statusIn.classList.add("enter");
+        }
       }
       statusIn.textContent = hint;
       statusIn.title = hint;

@@ -130,12 +130,12 @@ export function createUI(h: UIHandlers) {
   let hovering = false;
   const applyHoverScroll = () => {
     const over = statusIn.scrollWidth - status.clientWidth;
-    if (over <= 0) return;
+    if (over <= 0) { statusIn.classList.remove('scroll'); statusIn.style.transform = ''; statusIn.style.transitionDuration = ''; return; }
     statusIn.classList.add('scroll');
     statusIn.style.transitionDuration = Math.max(0.6, over / 60) + 's';
     statusIn.style.transform = `translateX(-${over}px)`;
   };
-  status.addEventListener('mouseenter', () => { hovering = true; applyHoverScroll(); });
+  status.addEventListener('mouseenter', () => { clearTimeout(leaveTimer); hovering = true; applyHoverScroll(); });
   status.addEventListener('mouseleave', () => {
     hovering = false;
     statusIn.style.transitionDuration = '.2s';
@@ -178,7 +178,14 @@ export function createUI(h: UIHandlers) {
     else if (vm.selecting) hint = T.hintMore(cur!.elements.length) + suffix;
     else if (hasElements) hint = T.hintNote + suffix;
     else hint = T.hintPick + suffix;
-    if (hint !== lastHint) { lastHint = hint; statusIn.classList.add('enter'); }
+    if (hint !== lastHint) {
+      lastHint = hint;
+      if (!statusIn.classList.contains('scroll')) {
+        statusIn.classList.remove('enter');
+        void statusIn.offsetWidth; // 리플로우 강제 — 연속 변경 시 애니메이션 재시작
+        statusIn.classList.add('enter');
+      }
+    }
     statusIn.textContent = hint;
     statusIn.title = hint;
     if (hovering) applyHoverScroll();

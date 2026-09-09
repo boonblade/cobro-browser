@@ -147,7 +147,34 @@ test('status scrolls on hover only when it overflows', async ({ cobroPage: page,
   await page.locator(`${HOST} .status`).hover();
   const inner = page.locator(`${HOST} .status-in`);
   await expect(inner).toHaveClass(/scroll/);
-  await expect.poll(() => inner.evaluate((el) => (el as HTMLElement).style.transform)).not.toBe('none');
+  await expect.poll(() => inner.evaluate((el) => getComputedStyle(el).transform)).not.toBe('none');
   await page.mouse.move(0, 0);
   await expect(inner).not.toHaveClass(/scroll/, { timeout: 300 });
+});
+
+test('scroll state clears when the hint shortens while still hovering', async ({ cobroPage: page, bridge }) => {
+  await page.goto('http://127.0.0.1:4173/basic.html');
+  bridge.core.setAgentText('x'.repeat(200));
+  await expect.poll(() => page.locator(`${HOST} .status`).textContent()).toContain('x'.repeat(200));
+  await page.locator(`${HOST} .status`).hover();
+  const inner = page.locator(`${HOST} .status-in`);
+  await expect(inner).toHaveClass(/scroll/);
+  bridge.done({ summary: 'ok', selectors: [], changedFiles: [] });
+  await expect(page.locator(`${HOST} .status`)).toContainText('완료: ok');
+  await expect(inner).not.toHaveClass(/scroll/);
+  await expect.poll(() => inner.evaluate((el) => getComputedStyle(el).transform)).toBe('none');
+});
+
+test('re-hovering within 200ms keeps the scroll state applied', async ({ cobroPage: page, bridge }) => {
+  await page.goto('http://127.0.0.1:4173/basic.html');
+  bridge.core.setAgentText('x'.repeat(200));
+  await expect.poll(() => page.locator(`${HOST} .status`).textContent()).toContain('x'.repeat(200));
+  const inner = page.locator(`${HOST} .status-in`);
+  await page.locator(`${HOST} .status`).hover();
+  await expect(inner).toHaveClass(/scroll/);
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(100);
+  await page.locator(`${HOST} .status`).hover();
+  await page.waitForTimeout(300);
+  await expect(inner).toHaveClass(/scroll/);
 });
