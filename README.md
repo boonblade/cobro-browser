@@ -13,29 +13,26 @@
 ### ① 사용자 설치(권장)
 
 ```bash
-claude mcp add -s user cobro-browser -- npx -y github:boonblade/cobro-browser
+claude mcp add -s user cobro-browser -- npx -y cobro-browser@latest
 ```
 
-소스는 비공개 GitHub 저장소에 있다. 설치하려면 이 저장소에 대한 접근 권한(`gh auth login` 또는 SSH 키 등록)이 먼저 필요하다. 빌드 산출물(`dist/server.js`, `dist/overlay.js`)이 저장소에 미리 커밋돼 있어 설치 시 별도 빌드가 없다. `npx`가 npm 캐시에 패키지를 받아 두고 실행하며, 첫 시작은 저장소를 받느라 20초 안팎, 이후에는 7초 안팎 걸린다(실측). 업데이트는 자동이다 — 다음 시작 때 최신 `master`를 받는다.
-
-`npm install -g github:…` 형태의 전역 설치는 쓰지 않는다. npm이 git 주소에서 전역 설치할 때 `dist/`를 빠뜨리는 문제가 재현됐다(Task 14 보고). npm 레지스트리 배포가 시작되면 `npx cobro-browser` / `npm install -g cobro-browser`로 바뀐다.
+npm 레지스트리에서 받는다. 빌드 산출물이 패키지에 들어 있어 별도 빌드가 없고, `@latest`라 다음 시작 때 최신 버전을 쓴다. 전역 설치(`npm i -g cobro-browser` 후 `claude mcp add -s user cobro-browser -- cobro-browser`)도 된다.
 
 WebKit(Safari 엔진)을 쓰려면 등록 명령에 `-e COBRO_BROWSER=webkit`을 추가한다.
 
-다른 호스트는 같은 명령(`npx -y github:boonblade/cobro-browser`)을 stdio MCP 서버로 등록한다. 서버는 호스트가 실행하고, 호스트가 stdio를 닫으면 브라우저까지 함께 정리된다.
+다른 호스트는 같은 명령(`npx -y cobro-browser@latest`)을 stdio MCP 서버로 등록한다. 서버는 호스트가 실행하고, 호스트가 stdio를 닫으면 브라우저까지 함께 정리된다.
 
-스킬 설치(`skills/claude-code/SKILL.md`, 이름 `cobro`)는 저장소 접근 권한이 있으므로 `gh`로 파일 하나를 받아 호스트의 스킬 경로에 둔다:
+운용 규약 스킬(`skills/claude-code/SKILL.md`, 이름 `cobro`)은 파일 하나를 호스트의 스킬 경로에 둔다:
 
 - PowerShell:
   ```powershell
   New-Item -ItemType Directory -Force "$HOME\.claude\skills\cobro" | Out-Null
-  $b64 = (gh api repos/boonblade/cobro-browser/contents/skills/claude-code/SKILL.md --jq .content) -join ''
-  [IO.File]::WriteAllBytes("$HOME\.claude\skills\cobro\SKILL.md", [Convert]::FromBase64String($b64))
+  Invoke-WebRequest https://raw.githubusercontent.com/boonblade/cobro-browser/master/skills/claude-code/SKILL.md -OutFile "$HOME\.claude\skills\cobro\SKILL.md"
   ```
 - bash/zsh:
   ```bash
   mkdir -p ~/.claude/skills/cobro
-  gh api repos/boonblade/cobro-browser/contents/skills/claude-code/SKILL.md --jq .content | base64 -d > ~/.claude/skills/cobro/SKILL.md
+  curl -fsSL https://raw.githubusercontent.com/boonblade/cobro-browser/master/skills/claude-code/SKILL.md -o ~/.claude/skills/cobro/SKILL.md
   ```
 
 복사해 두면 `/cobro`로 부를 수 있다.
@@ -43,7 +40,7 @@ WebKit(Safari 엔진)을 쓰려면 등록 명령에 `-e COBRO_BROWSER=webkit`을
 ### ② 개발자 설치
 
 ```bash
-git clone <저장소>
+git clone https://github.com/boonblade/cobro-browser.git
 cd cobro-browser
 npm i
 ```

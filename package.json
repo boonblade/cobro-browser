@@ -1,7 +1,6 @@
 {
   "name": "cobro-browser",
-  "version": "0.2.0",
-  "private": true,
+  "version": "0.3.0",
   "license": "Apache-2.0",
   "type": "module",
   "bin": {
@@ -41,5 +40,13 @@
     "typescript": "^5.6.0",
     "typescript-eslint": "^8.5.0",
     "vitest": "^2.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/boonblade/cobro-browser.git"
+  },
+  "homepage": "https://github.com/boonblade/cobro-browser#readme",
+  "bugs": {
+    "url": "https://github.com/boonblade/cobro-browser/issues"
   }
 }
