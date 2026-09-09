@@ -330,30 +330,34 @@ async function createBridge(opts) {
           break;
         case "send": {
           if (!Array.isArray(msg.batchIds) || !msg.page || typeof msg.page.url !== "string") return bad("batchIds \uBC30\uC5F4\uC774\uB098 page.url\uC774 \uC5C6\uB2E4");
-          const batches = core.markSent(msg.batchIds, msg.page);
+          const page = msg.page;
+          const batchIds = msg.batchIds;
           void (async () => {
+            let batches = [];
             try {
+              batches = core.markSent(batchIds, page);
               for (const b of batches) {
                 try {
-                  const p = await opts.screenshot?.(b, msg.page);
+                  const p = await opts.screenshot?.(b, page);
                   if (p) core.setScreenshot(b.id, p);
                 } catch (e) {
                   console.error("[cobro] screenshot failed", e.message);
                 }
               }
-              core.deliver(buildPayload({ page: msg.page, batches, console: opts.consoleEntries?.() ?? [], refreshStrategy: core.effectiveStrategy() }));
+              core.deliver(buildPayload({ page, batches, console: opts.consoleEntries?.() ?? [], refreshStrategy: core.effectiveStrategy() }));
             } catch (e) {
               console.error("[cobro] send \uCC98\uB9AC \uC2E4\uD328 \u2014 \uCD5C\uC18C \uD398\uC774\uB85C\uB4DC\uB85C \uBC30\uB2EC\uD55C\uB2E4", e.message);
+              if (batches.length === 0) batches = core.session.batches.filter((b) => batchIds.includes(b.id));
               core.deliver({
                 origin: "human",
                 sentAt: (/* @__PURE__ */ new Date()).toISOString(),
-                page: msg.page,
+                page,
                 batches: batches.map((b) => ({ id: b.id, note: b.note, elements: b.elements })),
                 console: [],
                 refreshStrategy: core.effectiveStrategy()
               });
             }
-          })();
+          })().catch((e) => console.error("[cobro] send \uBCF5\uAD6C \uC2E4\uD328 \u2014 \uC774 \uC804\uC1A1\uC740 \uBC30\uB2EC\uB418\uC9C0 \uC54A\uB294\uB2E4", e.message));
           break;
         }
       }
@@ -631,7 +635,6 @@ var mcp = createMcpServer({
   core: bridge.core,
   browser: launcher,
   done: (info) => bridge.done(info),
-  shotPath: (id) => store.shotPath(id),
   manualShotPath: (n) => store.manualShotPath(n),
   defaultWaitSec,
   tickMs,

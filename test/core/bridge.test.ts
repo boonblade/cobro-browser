@@ -68,4 +68,43 @@ describe('createBridge', () => {
     err.mockRestore();
     ws.close();
   });
+
+  it('resolves wait even when state saving throws (D2)', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const store = new Store(mkdtempSync(join(tmpdir(), 'cobro-')));
+    b = await createBridge({ store, token: 't' });
+    const ws = new WebSocket(`ws://127.0.0.1:${b.port}`);
+    await new Promise((r) => ws.once('open', r));
+    ws.send(JSON.stringify({ type: 'hello', token: 't' }));
+    ws.send(JSON.stringify({ type: 'draft', batches: [{ id: 'b3', note: '줄여줘', elements: [el], status: 'draft', createdAt: 't' }] }));
+    await new Promise((r) => setTimeout(r, 50));
+    const waiting = b.core.wait(5000);
+    vi.spyOn(store, 'save').mockImplementation(() => { throw new Error('EACCES'); });
+    ws.send(JSON.stringify({ type: 'send', batchIds: ['b3'], page }));
+    const r = await waiting;
+    expect(r.status).toBe('sent');
+    if (r.status !== 'sent') return;
+    expect(r.payload.batches[0]!.note).toBe('줄여줘');
+    expect(r.payload.console).toEqual([]);
+    err.mockRestore();
+    ws.close();
+  });
+
+  it('does not crash the process when recovery delivery also fails (D1)', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    b = await createBridge({ store: new Store(mkdtempSync(join(tmpdir(), 'cobro-'))), token: 't' });
+    const ws = new WebSocket(`ws://127.0.0.1:${b.port}`);
+    await new Promise((r) => ws.once('open', r));
+    ws.send(JSON.stringify({ type: 'hello', token: 't' }));
+    ws.send(JSON.stringify({ type: 'draft', batches: [{ id: 'b4', note: 'n', elements: [el], status: 'draft', createdAt: 't' }] }));
+    await new Promise((r) => setTimeout(r, 50));
+    vi.spyOn(b.core, 'deliver').mockImplementation(() => { throw new Error('deliver boom'); });
+    ws.send(JSON.stringify({ type: 'send', batchIds: ['b4'], page }));
+    await new Promise((r) => setTimeout(r, 100));
+    const calls = err.mock.calls.map((c) => String(c[0]));
+    expect(calls.some((m) => m.startsWith('[cobro] send 처리 실패'))).toBe(true);
+    expect(calls.some((m) => m.startsWith('[cobro] send 복구 실패'))).toBe(true);
+    err.mockRestore();
+    ws.close();
+  });
 });

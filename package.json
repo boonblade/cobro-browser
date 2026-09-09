@@ -21,7 +21,7 @@
     "build": "node scripts/build.mjs",
     "check": "tsc --noEmit && eslint . && node scripts/check-dist.mjs",
     "test": "vitest run",
-    "fixtures:install": "npm ci --prefix test/fixtures/vite-app",
+    "fixtures:install": "node scripts/install-fixtures.mjs",
     "e2e": "npm run build && npm run fixtures:install && playwright test",
     "start": "node dist/server.js"
   },

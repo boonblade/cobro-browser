@@ -29,23 +29,28 @@ export async function createBridge(opts: { store: Store; token: string; screensh
           core.markResolved(msg.batchId, msg.index, msg.missing); break;
         case 'send': {
           if (!Array.isArray(msg.batchIds) || !msg.page || typeof msg.page.url !== 'string') return bad('batchIds 배열이나 page.url이 없다');
-          const batches = core.markSent(msg.batchIds, msg.page);
+          const page = msg.page;
+          const batchIds = msg.batchIds;
           void (async () => {
-            // 무엇이 던지든 wait는 반드시 풀어준다 — 스크린샷·콘솔 없이라도 최소 페이로드를 배달한다
+            // 무엇이 던지든 wait는 반드시 풀어준다 — 상태 저장·스크린샷·콘솔이 실패해도 최소 페이로드는 배달한다
+            let batches: Batch[] = [];
             try {
+              batches = core.markSent(batchIds, page);
               for (const b of batches) {
-                try { const p = await opts.screenshot?.(b, msg.page); if (p) core.setScreenshot(b.id, p); } catch (e) { console.error('[cobro] screenshot failed', (e as Error).message); }
+                try { const p = await opts.screenshot?.(b, page); if (p) core.setScreenshot(b.id, p); } catch (e) { console.error('[cobro] screenshot failed', (e as Error).message); }
               }
-              core.deliver(buildPayload({ page: msg.page, batches, console: opts.consoleEntries?.() ?? [], refreshStrategy: core.effectiveStrategy() }));
+              core.deliver(buildPayload({ page, batches, console: opts.consoleEntries?.() ?? [], refreshStrategy: core.effectiveStrategy() }));
             } catch (e) {
               console.error('[cobro] send 처리 실패 — 최소 페이로드로 배달한다', (e as Error).message);
+              // markSent가 저장에서 던졌으면 반환값이 없다 — 메모리 상태에서 요청된 묶음을 되살린다
+              if (batches.length === 0) batches = core.session.batches.filter((b) => batchIds.includes(b.id));
               core.deliver({
-                origin: 'human', sentAt: new Date().toISOString(), page: msg.page,
+                origin: 'human', sentAt: new Date().toISOString(), page,
                 batches: batches.map((b) => ({ id: b.id, note: b.note, elements: b.elements })),
                 console: [], refreshStrategy: core.effectiveStrategy(),
               });
             }
-          })();
+          })().catch((e) => console.error('[cobro] send 복구 실패 — 이 전송은 배달되지 않는다', (e as Error).message));
           break;
         }
       }

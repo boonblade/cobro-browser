@@ -13,7 +13,7 @@ export interface BrowserLike {
 
 const text = (v: unknown) => ({ content: [{ type: 'text' as const, text: JSON.stringify(v) }] });
 
-export function createMcpServer(deps: { core: SessionCore; browser: BrowserLike; done(info: DoneInfo): Batch[]; shotPath(id: string): string; manualShotPath(name: string): string; defaultWaitSec?: number; tickMs?: number; onClose?: () => Promise<void> }): McpServer {
+export function createMcpServer(deps: { core: SessionCore; browser: BrowserLike; done(info: DoneInfo): Batch[]; manualShotPath(name: string): string; defaultWaitSec?: number; tickMs?: number; onClose?: () => Promise<void> }): McpServer {
   const { core, browser } = deps;
   const server = new McpServer({ name: 'cobro-browser', version: '0.1.0' });
   let restartedPending = false;

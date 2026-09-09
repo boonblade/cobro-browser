@@ -26,7 +26,7 @@ beforeEach(async () => {
     isAlive: () => state.alive,
     wasLaunched: () => state.launched,
   };
-  const server = createMcpServer({ core, browser, shotPath: (id) => `/s/${id}.png`, manualShotPath: (n) => `/s/manual/${n}.png`, done: (info) => core.done(info), defaultWaitSec: 1 });
+  const server = createMcpServer({ core, browser, manualShotPath: (n) => `/s/manual/${n}.png`, done: (info) => core.done(info), defaultWaitSec: 1 });
   const [ct, st] = InMemoryTransport.createLinkedPair();
   client = new Client({ name: 't', version: '0' });
   await server.connect(st); await client.connect(ct);
