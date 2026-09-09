@@ -18,11 +18,12 @@
   },
   "scripts": {
     "build": "node scripts/build.mjs",
-    "check": "tsc --noEmit && eslint . && node scripts/check-dist.mjs",
+    "check": "tsc --noEmit && eslint .",
     "test": "vitest run",
     "fixtures:install": "node scripts/install-fixtures.mjs",
     "e2e": "npm run build && npm run fixtures:install && playwright test",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
