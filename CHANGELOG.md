@@ -1,0 +1,48 @@
+# Changelog
+
+All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/).
+
+## [0.5.0] — 2026-09-10
+### Changed
+- README is now English; the Korean version moved to `README.ko.md`.
+- MCP `instructions`, server error messages and the Claude Code skill are now English. Overlay UI stays ko/en by browser language.
+- `package.json` gained `description` and `keywords` for npm search.
+### Added
+- This changelog.
+
+## [0.4.0] — 2026-09-10
+### Changed
+- Package and repository renamed `cobro-browser` → `cobro-mcp`. Register with `claude mcp add -s user cobro -- npx -y cobro-mcp@latest`. The old package is deprecated.
+- Name origin: Cobro = co-browse. One slogan: "Meet Cobro: Your Co-Agent, Your Browser."
+
+## [0.3.2] — 2026-09-09
+### Changed
+- Handshake: Send is enabled only while the agent is idle, waiting or done; the Unlock button is gone. The agent's `wait()` re-enables Send even if `done` was skipped.
+- Operating protocol is delivered as MCP `instructions` at initialize — registration alone teaches the agent the loop. The skill file is optional.
+### Fixed
+- A profile held by another cobro process is reported as "profile in use" instead of "Chrome not found".
+- The server exits when the host process dies (parent-PID watch), so no orphan browser blocks the next session.
+- `close` cancels a pending `wait` before closing the browser.
+- `dist/` is no longer tracked in git; it is built on publish.
+
+## [0.3.0] — 2026-09-09
+### Added
+- First public release on npm under Apache-2.0.
+### Changed
+- Overlay reduced to the core loop: pick elements → note → Send → done. History, Add batch and Redo removed.
+
+## [0.2.0] — 2026-09-09
+### Added
+- Toolbar status line that tells the user the next step, plus an agent status dot.
+- Overlay hints and tooltips switch ko/en by `navigator.language`; long hints scroll once on hover.
+### Changed
+- Chromium sandbox enabled (one fallback with a console error).
+### Fixed
+- Send-path error handling, fixture install on Windows/Node 24 (`EINVAL`), stdio smoke assertions.
+
+## [0.1.0] — 2026-09-08
+### Added
+- MCP server with six fixed tools: `open`, `wait`, `status`, `done`, `screenshot`, `close`.
+- Page overlay (Shadow DOM), local WebSocket channel with token auth, per-project session state in `.cobro/`, shared browser profile.
+- Refresh strategies `none` / `reload` / `event` with HMR auto-detection.
+- WebKit and Firefox engines via `COBRO_BROWSER`.
