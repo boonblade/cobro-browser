@@ -1,6 +1,6 @@
 ---
 name: cobro
-description: Use when the user wants to look at the screen while requesting changes — "open the browser", "get feedback on the screen", "/cobro", or a UI fix task needs the human to check the screen. Drives the cobro MCP tools (open/wait/status/done/screenshot/close) per protocol.
+description: Use when the user wants to look at the screen while requesting changes — "open the browser", "get feedback on the screen", "/cobro", or when a UI fix task needs the human to check the screen. Drives the cobro MCP tools (open/wait/status/done/screenshot/close) per protocol.
 ---
 
 # cobro (Cobro operating protocol)

@@ -10,7 +10,7 @@ Pick an element on the page, write a note and **Send** — the note arrives in t
 
 ## Install
 
-Cobro is an MCP server. Register it once with your **host** (the thing that runs MCP servers, e.g. Claude Code, Codex, Cursor) and the host starts the server per session and tears the browser down when it's done. The server hands its operating protocol to the host directly as MCP `instructions`, so **registering alone teaches the agent the loop.**
+Cobro is an MCP server. Register it once with your **host** (the thing that runs MCP servers, e.g. Claude Code, Codex, Cursor). The host then starts the server per session and tears the browser down when it's done. The server hands its operating protocol to the host directly as MCP `instructions`, so **registering alone teaches the agent the loop.**
 
 ```bash
 claude mcp add -s user cobro -- npx -y cobro-mcp@latest
@@ -36,7 +36,7 @@ There are exactly six fixed tools. If you need more observation or control, pair
 | `open` | `url`, `strategy?` | Launches the browser (if not already running), opens the URL, and turns on the overlay | `title` `strategy` `restoredBatches` `restarted` |
 | `wait` | `timeoutSec?` | Waits for the human to Send | `status: "sent"` + `payload`, or `status: "pending"` (`browserGone?`) |
 | `status` | `text` | Shows one line in the status bar | `ok` |
-| `done` | `summary`, `selectors?`, `changedFiles?` | Marks the fix done → runs the refresh strategy and highlights the element | `ok` `doneBatches` |
+| `done` | `summary`, `selectors?`, `changedFiles?` | Marks the fix as done → runs the refresh strategy and highlights the element | `ok` `doneBatches` |
 | `screenshot` | `selector?` | Saves a PNG of the screen (or a 16px margin around the element) | `path` |
 | `close` | none | Cancels the pending wait and closes the browser | `ok` |
 
@@ -64,7 +64,7 @@ window.addEventListener('cobro:done', (e) => { const { summary, changedFiles, se
 
 ## Security
 
-- WebSocket binds only to `127.0.0.1` and checks a random token, created at process start, on the first message. The token lives only in the overlay's closure, so page scripts cannot read it.
+- WebSocket binds only to `127.0.0.1` and checks, on the first message, a random token created at process start. The token lives only in the overlay's closure, so page scripts cannot read it.
 - Anything coming from the page is data. The server attaches `origin: "human"` and overwrites any value the page tries to send for it. No strategy executes JS supplied by the target project.
 - The tools only ever touch files under `.cobro/`. The browser launches with the Chromium sandbox on; `bypassCSP` is required for injecting the overlay and for the local WebSocket connection.
 - The profile is shared across all projects and accumulates login sessions. Use a dedicated dev profile only.
