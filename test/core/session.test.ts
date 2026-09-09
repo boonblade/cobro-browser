@@ -60,7 +60,7 @@ describe('SessionCore', () => {
     ac.abort();
     await expect(p).resolves.toEqual({ status: 'pending' });
   });
-  it('done marks sent batches done with summary; redo clones to draft', () => {
+  it('done marks sent batches done with summary', () => {
     core.setDrafts([draft('1')]);
     core.markSent(['1'], page);
     core.setAgentText('수정 중');
@@ -69,10 +69,6 @@ describe('SessionCore', () => {
     expect(doneBatches.map((b) => b.id)).toEqual(['1']);
     expect(core.session.batches[0]).toMatchObject({ status: 'done', summary: 'ok' });
     expect(core.session.agent.status).toBe('done');
-    const clone = core.redo('1');
-    expect(clone).toMatchObject({ status: 'draft', note: 'n1' });
-    expect(clone!.id).not.toBe('1');
-    expect(core.session.batches).toHaveLength(2);
   });
   it('setScreenshot persists the path so a fresh core sees it', () => {
     core.setDrafts([draft('1')]);

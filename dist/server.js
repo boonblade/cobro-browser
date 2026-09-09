@@ -67,7 +67,6 @@ var Store = class _Store {
 
 // src/core/session.ts
 import { EventEmitter } from "node:events";
-import { randomUUID } from "node:crypto";
 var SessionCore = class extends EventEmitter {
   constructor(store2) {
     super();
@@ -181,14 +180,6 @@ var SessionCore = class extends EventEmitter {
     this.store.pruneShots(this.s.batches.filter((b) => b.status !== "done").map((b) => b.id));
     this.commit();
     return out;
-  }
-  redo(batchId) {
-    const src = this.s.batches.find((b) => b.id === batchId && (b.status === "done" || b.status === "unanswered"));
-    if (!src) return null;
-    const clone = { id: randomUUID(), note: src.note, elements: src.elements.map((e) => ({ ...e })), status: "draft", createdAt: (/* @__PURE__ */ new Date()).toISOString() };
-    this.s.batches.push(clone);
-    this.commit();
-    return clone;
   }
   markResolved(batchId, index, missing) {
     const e = this.s.batches.find((b) => b.id === batchId)?.elements[index];
@@ -319,10 +310,6 @@ async function createBridge(opts) {
         case "draft":
           if (!Array.isArray(msg.batches)) return bad("batches\uAC00 \uBC30\uC5F4\uC774 \uC544\uB2C8\uB2E4");
           core.setDrafts(msg.batches);
-          break;
-        case "redo":
-          if (typeof msg.batchId !== "string") return bad("batchId\uAC00 \uBB38\uC790\uC5F4\uC774 \uC544\uB2C8\uB2E4");
-          core.redo(msg.batchId);
           break;
         case "resolved":
           if (typeof msg.batchId !== "string") return bad("batchId\uAC00 \uBB38\uC790\uC5F4\uC774 \uC544\uB2C8\uB2E4");

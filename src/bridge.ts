@@ -21,9 +21,6 @@ export async function createBridge(opts: { store: Store; token: string; screensh
         case 'draft':
           if (!Array.isArray(msg.batches)) return bad('batches가 배열이 아니다');
           core.setDrafts(msg.batches); break;
-        case 'redo':
-          if (typeof msg.batchId !== 'string') return bad('batchId가 문자열이 아니다');
-          core.redo(msg.batchId); break;
         case 'resolved':
           if (typeof msg.batchId !== 'string') return bad('batchId가 문자열이 아니다');
           core.markResolved(msg.batchId, msg.index, msg.missing); break;

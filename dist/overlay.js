@@ -39,17 +39,6 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
 .row{display:flex;justify-content:flex-end;gap:6px;align-items:center}
 .row .send{color:#fff;background:#e35d5d;border-color:#e35d5d;font-weight:700}
 .row .send:disabled{opacity:.4;cursor:not-allowed}
-.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}
-.tabs button.on{background:#3a4a72;border-color:#9db8ef;color:#fff}
-.hist{margin-top:8px;border-top:1px solid #262e47;padding-top:6px;max-height:140px;overflow:auto;font-size:12px;color:#aab6d0}
-.hist .hist-title{color:#8291b0;font-size:11px;margin-bottom:4px}
-.hist .item{display:flex;justify-content:space-between;gap:6px;align-items:flex-start;padding:4px 0;border-bottom:1px solid #1f2740}
-.hist .item:last-child{border-bottom:0}
-.hist .badge{display:inline-block;border-radius:3px;padding:0 4px;margin-right:4px;font-size:10px;color:#0e111a}
-.hist .b-done{background:#4fd18b}
-.hist .b-sent{background:#f0b429}
-.hist .b-unanswered{background:#8291b0}
-.hist .sum{display:block;color:#8291b0;font-size:11px;margin-top:2px}
 .flash{position:fixed;border:2px solid #4fd18b;border-radius:2px;pointer-events:none;animation:cobroflash 1.6s ease-out forwards}
 @keyframes cobroflash{0%{opacity:1}100%{opacity:0}}
 /* shadow root\uC758 \uC790\uC2DD\uC740 \uBAA8\uB450 position:fixed \uD615\uC81C \u2014 picker\uAC00 glass\uB97C toolbar/panel \uB4A4\uC5D0 append\uD558\uBBC0\uB85C \uC313\uC784 \uC21C\uC11C\uB97C \uBA85\uC2DC\uD55C\uB2E4 */
@@ -65,10 +54,6 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
       agentSent: "\uC804\uC1A1\uB428 \u2014 \uC5D0\uC774\uC804\uD2B8 \uC751\uB2F5 \uB300\uAE30",
       agentWorking: "\uC218\uC815 \uC911",
       agentDone: "\uC644\uB8CC",
-      batchDraft: "\uCD08\uC548",
-      batchSent: "\uC804\uC1A1\uB428",
-      batchDone: "\uCC98\uB9AC\uB428",
-      batchUnanswered: "\uC751\uB2F5 \uC5C6\uC74C",
       disconnected: "\uC5F0\uACB0 \uB04A\uAE40 \u2014 \uC7AC\uC5F0\uACB0 \uC911",
       hintSend: "Send\uB85C \uC804\uC1A1\uD558\uC138\uC694",
       hintClick: "\uD398\uC774\uC9C0\uC5D0\uC11C \uC694\uC18C\uB97C \uD074\uB9AD\uD558\uC138\uC694 \xB7 Esc\uB85C \uD574\uC81C",
@@ -80,16 +65,12 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
       selNone: "\uC120\uD0DD\uB41C \uC694\uC18C \uC5C6\uC74C \xB7 \uBA54\uBAA8\uB9CC \uBCF4\uB0B4\uB3C4 \uB429\uB2C8\uB2E4",
       elMissing: "\uC694\uC18C \uC5C6\uC74C",
       notePlaceholder: "\uC218\uC815 \uC694\uCCAD \uBA54\uBAA8\u2026",
-      histTitle: "\uBCF4\uB0B8 \uC694\uCCAD",
       tipSelect: "\uC694\uC18C \uC120\uD0DD \uBAA8\uB4DC (Ctrl+Shift+F)",
       tipCollapse: "\uD328\uB110 \uC811\uAE30 / \uD3BC\uCE58\uAE30",
-      tipAdd: "\uC9C0\uAE08 \uBA54\uBAA8\uB97C \uB450\uACE0 \uC0C8 \uBB36\uC74C \uC2DC\uC791",
       tipSend: "\uC120\uD0DD\uD55C \uC694\uC18C\uC640 \uBA54\uBAA8\uB97C \uC5D0\uC774\uC804\uD2B8\uC5D0 \uC804\uC1A1",
       tipSendLocked: "\uC5D0\uC774\uC804\uD2B8 \uC751\uB2F5 \uB300\uAE30 \uC911 \u2014 Unlock\uC73C\uB85C \uB2E4\uC2DC \uBCF4\uB0BC \uC218 \uC788\uC2B5\uB2C8\uB2E4",
       tipUnlock: "\uC5D0\uC774\uC804\uD2B8 \uC751\uB2F5 \uC5C6\uC774 \uB2E4\uC2DC \uBCF4\uB0B4\uAE30",
-      tipRedo: "\uC774 \uC694\uCCAD \uB2E4\uC2DC \uBCF4\uB0B4\uAE30",
-      tipRemove: "\uC774 \uC694\uC18C \uBE7C\uAE30",
-      tipTab: (i, n) => `\uBB36\uC74C #${i} \xB7 \uC694\uC18C ${n}\uAC1C`
+      tipRemove: "\uC774 \uC694\uC18C \uBE7C\uAE30"
     },
     en: {
       agentIdle: "Agent not connected",
@@ -97,10 +78,6 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
       agentSent: "Sent \u2014 waiting for the agent",
       agentWorking: "Working",
       agentDone: "Done",
-      batchDraft: "Draft",
-      batchSent: "Sent",
-      batchDone: "Done",
-      batchUnanswered: "No reply",
       disconnected: "Disconnected \u2014 reconnecting",
       hintSend: "Press Send to deliver",
       hintClick: "Click an element on the page \xB7 Esc to exit",
@@ -112,16 +89,12 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
       selNone: "No element selected \xB7 a note alone is fine",
       elMissing: "missing",
       notePlaceholder: "Describe the change\u2026",
-      histTitle: "Sent requests",
       tipSelect: "Pick mode (Ctrl+Shift+F)",
       tipCollapse: "Collapse / expand the panel",
-      tipAdd: "Start a new batch, keep this note",
       tipSend: "Send the selected elements and note to the agent",
       tipSendLocked: "Waiting for the agent \u2014 use Unlock to send again",
       tipUnlock: "Send again without the agent's reply",
-      tipRedo: "Send this request again",
-      tipRemove: "Remove this element",
-      tipTab: (i, n) => `Batch #${i} \xB7 ${n} element(s)`
+      tipRemove: "Remove this element"
     }
   }[LANG];
   var AGENT_TEXT = {
@@ -131,7 +104,6 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
     working: (t) => T.agentWorking + (t ? ": " + t : ""),
     done: (t) => T.agentDone + (t ? ": " + t : "")
   };
-  var BATCH_STATUS = { draft: T.batchDraft, sent: T.batchSent, done: T.batchDone, unanswered: T.batchUnanswered };
   var DOT_TITLE = { idle: T.agentIdle, waiting: T.agentWaiting, sent: T.agentSent, working: T.agentWorking, done: T.agentDone };
   function createUI(h) {
     const host = document.createElement("div");
@@ -234,7 +206,7 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
       const wasTa = active instanceof HTMLTextAreaElement ? active : null;
       const sel = wasTa ? [wasTa.selectionStart, wasTa.selectionEnd] : null;
       selectBtn.classList.toggle("on", vm.selecting);
-      const cur = vm.drafts.find((b) => b.id === vm.current) ?? vm.drafts[vm.drafts.length - 1];
+      const cur = vm.drafts[0];
       const hasElements = !!cur && cur.elements.length > 0;
       const suffix = vm.strategy ? ` \xB7 ${T.refresh}: ${vm.strategy}` : "";
       let hint;
@@ -262,20 +234,15 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
       status.classList.toggle("off", !vm.connected);
       dot.className = vm.connected ? "dot " + vm.agent.status : "dot";
       dot.title = vm.connected ? DOT_TITLE[vm.agent.status] : T.disconnected;
-      const show = !collapsed && (vm.drafts.length > 0 || vm.history.length > 0);
+      const show = !collapsed && vm.drafts.length > 0;
       panel.classList.toggle("show", show);
+      if (vm.drafts.length === 0) {
+        panel.textContent = "";
+        textareas.clear();
+        return;
+      }
       if (!show) return;
       panel.textContent = "";
-      if (vm.drafts.length > 1) {
-        const tabs = el("div", "tabs");
-        vm.drafts.forEach((b, i) => {
-          const t = el("button", b === cur ? "on" : "", `#${i + 1} (${b.elements.length})`);
-          t.title = T.tipTab(i + 1, b.elements.length);
-          t.onclick = () => h.onSelectBatch(b.id);
-          tabs.append(t);
-        });
-        panel.append(tabs);
-      }
       if (cur) {
         const h4 = el("h4");
         h4.append(el("span", "mark", "\u25AE"), document.createTextNode(cur.elements.length > 0 ? T.selCount(cur.elements.length) : T.selNone));
@@ -303,14 +270,10 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
         panel.append(ta);
       }
       const row = el("div", "row");
-      const add = el("button", "", "Add batch");
-      add.title = T.tipAdd;
-      add.onclick = () => h.onAddBatch();
       const send = el("button", "send", "Send");
       send.disabled = vm.locked;
       send.title = vm.locked ? T.tipSendLocked : T.tipSend;
       send.onclick = () => h.onSend();
-      row.append(add);
       if (vm.locked) {
         const unlock = el("button", "", "Unlock");
         unlock.title = T.tipUnlock;
@@ -319,25 +282,6 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
       }
       row.append(send);
       panel.append(row);
-      if (vm.history.length) {
-        const hist = el("div", "hist");
-        hist.append(el("div", "hist-title", T.histTitle));
-        for (const b of vm.history.slice(0, 20)) {
-          const item = el("div", "item");
-          const left = el("span");
-          left.append(el("span", `badge b-${b.status}`, BATCH_STATUS[b.status]), document.createTextNode(b.note.slice(0, 60)));
-          if (b.summary) left.append(el("span", "sum", `\u2192 ${b.summary.slice(0, 60)}`));
-          item.append(left);
-          if (b.status === "done" || b.status === "unanswered") {
-            const redo = el("button", "", "Redo");
-            redo.title = T.tipRedo;
-            redo.onclick = () => h.onRedo(b.id);
-            item.append(redo);
-          }
-          hist.append(item);
-        }
-        panel.append(hist);
-      }
       for (const id of [...textareas.keys()]) if (!vm.drafts.some((b) => b.id === id)) textareas.delete(id);
       if (wasTa && sel && wasTa.isConnected) {
         wasTa.focus();
@@ -713,8 +657,6 @@ ${Math.round(r.width)}\xD7${Math.round(r.height)}`;
         agent: session?.agent ?? { status: "idle", text: "" },
         strategy: session ? session.strategy ?? session.detected : null,
         drafts: drafts ?? [],
-        current,
-        history: (session?.batches ?? []).filter((b) => b.status !== "draft").slice().reverse(),
         locked: !unlocked && (session?.agent.status === "sent" || session?.agent.status === "working")
       });
       const render = () => ui.render(vm());
@@ -747,18 +689,6 @@ ${Math.round(r.width)}\xD7${Math.round(r.height)}`;
             pushDraft();
           }
         },
-        onSelectBatch: (id) => {
-          current = id;
-          render();
-        },
-        onAddBatch: () => {
-          drafts ??= [];
-          const b = newBatch();
-          drafts.push(b);
-          current = b.id;
-          pushDraft();
-          render();
-        },
         onRemoveElement: (id, i) => {
           const b = drafts?.find((d) => d.id === id);
           if (b) {
@@ -781,7 +711,6 @@ ${Math.round(r.width)}\xD7${Math.round(r.height)}`;
           picker.setActive(false);
           render();
         },
-        onRedo: (id) => chan.send({ type: "redo", batchId: id }),
         onUnlock: () => {
           unlocked = true;
           render();
@@ -824,10 +753,6 @@ ${Math.round(r.width)}\xD7${Math.round(r.height)}`;
             current = drafts[drafts.length - 1]?.id ?? null;
           } else {
             drafts = drafts.filter((d) => !nonDraft.has(d.id));
-            for (const b of serverDrafts) if (!nonDraft.has(b.id) && !drafts.some((d) => d.id === b.id)) {
-              drafts.push(resolveDraft(b));
-              current = b.id;
-            }
           }
           render();
         } else if (m.type === "done") {
