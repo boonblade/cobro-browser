@@ -1,6 +1,8 @@
-# Cobro (`cobro-browser`)
+# Cobro (`cobro-mcp`)
 
 **Meet Cobro: Your Co-Agent, Your Browser.**
+
+Cobro = **co-browse**. 사람과 에이전트가 같은 화면을 함께 본다.
 
 화면에서 요소를 고르고 메모를 써서 **Send**하면, 그 메모가 요소 맥락(선택자·스타일·스크린샷·페이지 정보·콘솔 에러)과 함께 에이전트 대화에 바로 도착한다. 에이전트의 진행·완료 신호는 같은 연결로 브라우저에 즉시 돌아온다. MCP 서버 + 로컬 WebSocket + 페이지 오버레이. 대상 프로젝트 소스는 건드리지 않는다(생기는 것은 `.cobro/` 하나).
 
@@ -9,12 +11,12 @@
 Cobro는 MCP 서버다. **호스트**(Claude Code·Codex·Cursor처럼 MCP 서버를 실행하는 쪽)에 한 번 등록하면 호스트가 세션마다 서버를 띄우고 끝나면 브라우저까지 정리한다. 운용 규약은 서버가 MCP `instructions`로 호스트에 직접 주므로 **등록만으로 에이전트가 루프를 안다.**
 
 ```bash
-claude mcp add -s user cobro-browser -- npx -y cobro-browser@latest
+claude mcp add -s user cobro -- npx -y cobro-mcp@latest
 ```
 
-`-s user`로 등록하면 이 PC의 어느 저장소에서든 쓸 수 있다(생략하면 현재 폴더에서만). 상태(`.cobro/`)는 저장소마다 따로 생기고, 브라우저 프로필(`~/.cobro/profile/`)은 공유라 로그인은 한 번만 한다. 전역 설치(`npm i -g cobro-browser` 후 `-- cobro-browser`)도 된다. 다른 호스트는 같은 실행 명령을 stdio MCP 서버로 등록한다.
+`-s user`로 등록하면 이 PC의 어느 저장소에서든 쓸 수 있다(생략하면 현재 폴더에서만). 상태(`.cobro/`)는 저장소마다 따로 생기고, 브라우저 프로필(`~/.cobro/profile/`)은 공유라 로그인은 한 번만 한다. 전역 설치(`npm i -g cobro-mcp` 후 `-- cobro-mcp`)도 된다. 다른 호스트는 같은 실행 명령을 stdio MCP 서버로 등록한다.
 
-**소스로 쓰기**: `git clone https://github.com/boonblade/cobro-browser.git && cd cobro-browser && npm i && npm run build` 후 `claude mcp add -s user cobro-browser -- node "$PWD/dist/server.js"`. `dist/`는 git에 없으니 clone 직후와 소스 수정 뒤에 `npm run build`. Chrome 또는 Edge가 필요하고, 없으면 `npx playwright-core install chromium` 후 `COBRO_BROWSER_CHANNEL=chromium`.
+**소스로 쓰기**: `git clone https://github.com/boonblade/cobro-mcp.git && cd cobro-mcp && npm i && npm run build` 후 `claude mcp add -s user cobro -- node "$PWD/dist/server.js"`. `dist/`는 git에 없으니 clone 직후와 소스 수정 뒤에 `npm run build`. Chrome 또는 Edge가 필요하고, 없으면 `npx playwright-core install chromium` 후 `COBRO_BROWSER_CHANNEL=chromium`.
 
 **Claude Code 팁**: `wait`는 기본 2분 뒤 백그라운드로 넘어간다. `~/.claude/settings.json`에 `"env": { "CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS": "5000" }`를 두면 5초 만에 넘어가 대기 중에도 다른 지시가 바로 먹는다.
 
