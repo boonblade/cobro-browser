@@ -200,4 +200,5 @@ test('panel has no batch tabs, Add batch, or history (R64)', async ({ cobroPage:
   bridge.done({ summary: 'ok', selectors: [], changedFiles: [] });
   await expect(page.locator(`${HOST} .status`)).toContainText('완료');
   await expect(page.locator(`${HOST} .hist`)).toHaveCount(0);
+  await expect(page.locator(`${HOST} .panel`)).not.toBeVisible();
 });

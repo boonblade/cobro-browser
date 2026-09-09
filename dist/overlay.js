@@ -206,7 +206,7 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
       const wasTa = active instanceof HTMLTextAreaElement ? active : null;
       const sel = wasTa ? [wasTa.selectionStart, wasTa.selectionEnd] : null;
       selectBtn.classList.toggle("on", vm.selecting);
-      const cur = vm.drafts[0];
+      const cur = vm.drafts[vm.drafts.length - 1];
       const hasElements = !!cur && cur.elements.length > 0;
       const suffix = vm.strategy ? ` \xB7 ${T.refresh}: ${vm.strategy}` : "";
       let hint;

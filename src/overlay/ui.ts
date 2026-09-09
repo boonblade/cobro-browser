@@ -151,7 +151,7 @@ export function createUI(h: UIHandlers) {
     const wasTa = active instanceof HTMLTextAreaElement ? active : null;
     const sel: [number, number] | null = wasTa ? [wasTa.selectionStart, wasTa.selectionEnd] : null;
     selectBtn.classList.toggle('on', vm.selecting);
-    const cur = vm.drafts[0];
+    const cur = vm.drafts[vm.drafts.length - 1];
     const hasElements = !!cur && cur.elements.length > 0;
     const suffix = vm.strategy ? ` · ${T.refresh}: ${vm.strategy}` : '';
     let hint: string;
