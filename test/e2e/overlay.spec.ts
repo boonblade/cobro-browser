@@ -124,3 +124,59 @@ test('toolbar hint guides the next action', async ({ cobroPage: page }) => {
   await page.keyboard.type('x');
   await expect(page.locator(`${HOST} .status`)).toContainText('Send로 전송하세요');
 });
+
+test.describe('en locale', () => {
+  test.use({ locale: 'en-US' });
+  test('shows English hints and labels', async ({ cobroPage: page }) => {
+    await page.goto('http://127.0.0.1:4173/basic.html');
+    await expect(page.locator(`${HOST} .status`)).toContainText('Press Ctrl+Shift+F');
+    await selectAt(page, '#target');
+    await expect(page.locator(`${HOST} .status`)).toContainText('selected');
+    await expect(page.locator(`${HOST} .panel h4`)).toContainText('element');
+    await expect(page.locator(`${HOST} textarea`)).toHaveAttribute('placeholder', /Describe the change/);
+    await expect(page.locator(`${HOST} button.send`)).toBeVisible();
+  });
+});
+
+test('status scrolls on hover only when it overflows', async ({ cobroPage: page, bridge }) => {
+  await page.goto('http://127.0.0.1:4173/basic.html');
+  await page.locator(`${HOST} .status`).hover();
+  await expect(page.locator(`${HOST} .status-in`)).not.toHaveClass(/scroll/);
+  bridge.core.setAgentText('x'.repeat(200));
+  await expect.poll(() => page.locator(`${HOST} .status`).textContent()).toContain('x'.repeat(200));
+  await page.locator(`${HOST} .status`).hover();
+  const inner = page.locator(`${HOST} .status-in`);
+  await expect(inner).toHaveClass(/scroll/);
+  await expect.poll(() => inner.evaluate((el) => getComputedStyle(el).transform)).not.toBe('none');
+  await page.mouse.move(0, 0);
+  await expect(inner).not.toHaveClass(/scroll/, { timeout: 300 });
+});
+
+test('scroll state clears when the hint shortens while still hovering', async ({ cobroPage: page, bridge }) => {
+  await page.goto('http://127.0.0.1:4173/basic.html');
+  bridge.core.setAgentText('x'.repeat(200));
+  await expect.poll(() => page.locator(`${HOST} .status`).textContent()).toContain('x'.repeat(200));
+  await page.locator(`${HOST} .status`).hover();
+  const inner = page.locator(`${HOST} .status-in`);
+  await expect(inner).toHaveClass(/scroll/);
+  bridge.done({ summary: 'ok', selectors: [], changedFiles: [] });
+  await expect(page.locator(`${HOST} .status`)).toContainText('완료: ok');
+  await expect(inner).not.toHaveClass(/scroll/);
+  await expect.poll(() => inner.evaluate((el) => getComputedStyle(el).transform)).toBe('none');
+});
+
+test('re-hovering within 200ms keeps the scroll state applied', async ({ cobroPage: page, bridge }) => {
+  await page.goto('http://127.0.0.1:4173/basic.html');
+  bridge.core.setAgentText('x'.repeat(200));
+  await expect.poll(() => page.locator(`${HOST} .status`).textContent()).toContain('x'.repeat(200));
+  const inner = page.locator(`${HOST} .status-in`);
+  const box = (await page.locator(`${HOST} .status`).boundingBox())!;
+  const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
+  await page.mouse.move(cx, cy);
+  await expect(inner).toHaveClass(/scroll/);
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(50);
+  await page.mouse.move(cx, cy);
+  await page.waitForTimeout(300);
+  await expect(inner).toHaveClass(/scroll/);
+});
