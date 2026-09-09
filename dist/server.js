@@ -389,6 +389,17 @@ function channelOrder(explicit, env) {
   const named = [...new Set([explicit, env, "chrome", "msedge"].filter((c) => !!c))];
   return [...named, void 0];
 }
+function chromiumLaunchOptions(o) {
+  return {
+    headless: o.headless,
+    channel: o.channel === "chromium" ? void 0 : o.channel,
+    bypassCSP: true,
+    viewport: null,
+    args: ["--disable-infobars"],
+    ignoreDefaultArgs: ["--enable-automation"],
+    chromiumSandbox: o.sandbox
+  };
+}
 var BrowserLauncher = class {
   constructor(opts) {
     this.opts = opts;
@@ -422,20 +433,23 @@ var BrowserLauncher = class {
     } else {
       const tried = [];
       const order = channelOrder(this.opts.channel, process.env.COBRO_BROWSER_CHANNEL);
-      for (const channel of order) {
-        try {
-          this.ctx = await chromium.launchPersistentContext(this.opts.profileDir, {
-            headless: this.opts.headless ?? false,
-            channel: channel === "chromium" ? void 0 : channel,
-            bypassCSP: true,
-            viewport: null,
-            args: ["--disable-infobars"],
-            ignoreDefaultArgs: ["--enable-automation"]
-          });
+      for (const sandbox of [true, false]) {
+        for (const channel of order) {
+          try {
+            this.ctx = await chromium.launchPersistentContext(this.opts.profileDir, chromiumLaunchOptions({
+              headless: this.opts.headless ?? false,
+              channel,
+              sandbox
+            }));
+            break;
+          } catch (e) {
+            tried.push(`${channel ?? "bundled"}${sandbox ? "" : " (no-sandbox)"}: ${e.message.split("\n")[0]}`);
+            this.ctx = null;
+          }
+        }
+        if (this.ctx) {
+          if (!sandbox) console.error("[cobro] Chromium \uC0CC\uB4DC\uBC15\uC2A4\uB97C \uCF1C\uACE0 \uB744\uC6B0\uC9C0 \uBABB\uD574 --no-sandbox\uB85C \uC2E4\uD589\uD55C\uB2E4 \u2014 \uBE0C\uB77C\uC6B0\uC800\uAC00 \uACBD\uACE0 \uC904\uC744 \uD45C\uC2DC\uD55C\uB2E4");
           break;
-        } catch (e) {
-          tried.push(`${channel ?? "bundled"}: ${e.message.split("\n")[0]}`);
-          this.ctx = null;
         }
       }
       if (!this.ctx) throw new Error(INSTALL_HINT + "\n" + tried.join("\n"));

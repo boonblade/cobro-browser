@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { channelOrder, parseEngine } from '../../src/browser/launcher.js';
+import { channelOrder, parseEngine, chromiumLaunchOptions } from '../../src/browser/launcher.js';
 
 describe('channelOrder', () => {
   it('defaults to chrome, msedge, bundled', () => { expect(channelOrder(undefined, undefined)).toEqual(['chrome', 'msedge', undefined]); });
@@ -13,5 +13,25 @@ describe('parseEngine', () => {
     expect(parseEngine('chromium')).toBe('chromium');
     expect(parseEngine(undefined)).toBe('chromium');
     expect(parseEngine('safari')).toBe('chromium');
+  });
+});
+
+describe('chromiumLaunchOptions', () => {
+  it('sandbox: true → chromiumSandbox === true', () => {
+    expect(chromiumLaunchOptions({ headless: true, channel: undefined, sandbox: true }).chromiumSandbox).toBe(true);
+  });
+  it('sandbox: false → chromiumSandbox === false', () => {
+    expect(chromiumLaunchOptions({ headless: true, channel: undefined, sandbox: false }).chromiumSandbox).toBe(false);
+  });
+  it("channel 'chromium' → undefined (번들 빌드), 'chrome' → 'chrome' 그대로", () => {
+    expect(chromiumLaunchOptions({ headless: true, channel: 'chromium', sandbox: true }).channel).toBeUndefined();
+    expect(chromiumLaunchOptions({ headless: true, channel: 'chrome', sandbox: true }).channel).toBe('chrome');
+  });
+  it('args·ignoreDefaultArgs·bypassCSP·viewport는 기존 값 그대로', () => {
+    const o = chromiumLaunchOptions({ headless: true, channel: undefined, sandbox: true });
+    expect(o.args).toEqual(['--disable-infobars']);
+    expect(o.ignoreDefaultArgs).toEqual(['--enable-automation']);
+    expect(o.bypassCSP).toBe(true);
+    expect(o.viewport).toBeNull();
   });
 });
