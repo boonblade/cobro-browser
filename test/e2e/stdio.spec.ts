@@ -34,6 +34,7 @@ test('빌드된 dist/server.js가 stdio로 도구 6개를 제공하고 stdin 종
   const client = new Client({ name: 'cobro-stdio-smoke', version: '0' });
   await client.connect(transport);
   expect(client.getServerVersion()?.version).toBe(JSON.parse(readFileSync('package.json', 'utf8')).version);
+  expect(client.getInstructions()).toContain('open(url)');
   const pid = transport.pid;
   expect(pid).not.toBeNull();
 
