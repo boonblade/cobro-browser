@@ -1,10 +1,10 @@
 {
-  "name": "cobro-browser",
-  "version": "0.3.2",
+  "name": "cobro-mcp",
+  "version": "0.4.0",
   "license": "Apache-2.0",
   "type": "module",
   "bin": {
-    "cobro-browser": "dist/server.js"
+    "cobro-mcp": "dist/server.js"
   },
   "files": [
     "dist",
@@ -44,10 +44,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/boonblade/cobro-browser.git"
+    "url": "git+https://github.com/boonblade/cobro-mcp.git"
   },
-  "homepage": "https://github.com/boonblade/cobro-browser#readme",
+  "homepage": "https://github.com/boonblade/cobro-mcp#readme",
   "bugs": {
-    "url": "https://github.com/boonblade/cobro-browser/issues"
+    "url": "https://github.com/boonblade/cobro-mcp/issues"
   }
 }

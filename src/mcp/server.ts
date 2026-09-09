@@ -25,7 +25,7 @@ const INSTRUCTIONS = [
 
 export function createMcpServer(deps: { core: SessionCore; browser: BrowserLike; done(info: DoneInfo): Batch[]; manualShotPath(name: string): string; version: string; defaultWaitSec?: number; tickMs?: number; onClose?: () => Promise<void> }): McpServer {
   const { core, browser } = deps;
-  const server = new McpServer({ name: 'cobro-browser', version: deps.version }, { instructions: INSTRUCTIONS });
+  const server = new McpServer({ name: 'cobro-mcp', version: deps.version }, { instructions: INSTRUCTIONS });
   let restartedPending = false;
   // 한 번 띄운 뒤 사라졌다 = 사용자가 창을 닫았다. 그 상태로 기다리면 영영 오지 않는다(룰링 R34a).
   const browserGone = () => browser.wasLaunched() && !browser.isAlive();
