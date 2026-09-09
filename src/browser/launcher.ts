@@ -1,8 +1,15 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { chromium, webkit, firefox, type BrowserContext, type Page } from 'playwright-core';
 import { dedupeConsole } from '../core/payload.js';
 import type { ConsoleEntry, Rect } from '../core/types.js';
 
 const INSTALL_HINT = 'Chrome 또는 Edge를 찾지 못했습니다. Chrome을 설치하거나 COBRO_BROWSER_CHANNEL(chrome|msedge|chromium)을 지정하세요. 번들 Chromium: npx playwright-core install chromium\nWebKit/Firefox 엔진: npx playwright-core install webkit firefox';
+
+/** 모든 채널 시도가 "has been closed"로 실패하고 잠금 파일이 있으면 다른 프로세스가 프로필을 쓰고 있는 것 */
+export function classifyLaunchFailure(tried: string[], lockExists: boolean): 'profile-locked' | 'not-found' {
+  return tried.every((t) => t.includes('has been closed')) && lockExists ? 'profile-locked' : 'not-found';
+}
 
 export type Engine = 'chromium' | 'webkit' | 'firefox';
 export function parseEngine(v: string | undefined): Engine {
@@ -68,7 +75,13 @@ export class BrowserLauncher {
           break;
         }
       }
-      if (!this.ctx) throw new Error(INSTALL_HINT + '\n' + tried.join('\n'));
+      if (!this.ctx) {
+        const lockExists = existsSync(join(this.opts.profileDir, 'lockfile')) || existsSync(join(this.opts.profileDir, 'SingletonLock'));
+        if (classifyLaunchFailure(tried, lockExists) === 'profile-locked') {
+          throw new Error(`cobro 브라우저 프로필을 다른 프로세스가 쓰고 있습니다: ${this.opts.profileDir}\n다른 세션의 cobro 브라우저를 닫거나(close), COBRO_PROFILE_DIR로 다른 프로필을 지정하세요.\n` + tried.join('\n'));
+        }
+        throw new Error(INSTALL_HINT + '\n' + tried.join('\n'));
+      }
     }
     await this.ctx.addInitScript(this.injected());
     this.page = this.ctx.pages()[0] ?? (await this.ctx.newPage());
