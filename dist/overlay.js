@@ -10,25 +10,41 @@
 .hover-badge{position:fixed;display:none;background:#1c2333;border:1px solid #e35d5d;border-radius:4px;padding:4px 8px;white-space:pre;color:#fff;pointer-events:none;max-width:480px}
 .band{position:fixed;display:none;border:1.5px dashed #e35d5d;background:rgba(227,93,93,.06);pointer-events:none}
 .toolbar{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:6px;align-items:center;background:#0e111a;border:1px solid #2a3350;border-radius:999px;padding:6px 10px;box-shadow:0 4px 16px rgba(0,0,0,.5);pointer-events:auto}
-.toolbar button,.panel button{font:inherit;color:#9db8ef;background:transparent;border:1px solid transparent;border-radius:999px;padding:4px 10px;cursor:pointer}
+.toolbar button,.panel button{font:inherit;color:#cdd8f0;background:#232c42;border:1px solid #3a4a72;border-radius:999px;padding:4px 10px;cursor:pointer}
+.toolbar button:hover,.panel button:hover{background:#2e3a58;border-color:#4c5f92;color:#fff}
+.toolbar button:focus-visible,.panel button:focus-visible{outline:2px solid #9db8ef;outline-offset:1px}
 .toolbar button.on{color:#fff;background:#e35d5d;border-color:#e35d5d}
-.status{color:#aab6d0;max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.els button{background:transparent;border-color:transparent;color:#8291b0;padding:0 6px}
+.els button:hover{background:#2e3a58;color:#fff}
+.dot{font-size:9px;line-height:1;color:#8291b0}
+.dot.waiting{color:#4fd18b}
+.dot.sent{color:#f0b429}
+.dot.working{color:#9db8ef}
+.dot.done{color:#4fd18b}
+.status{color:#aab6d0;max-width:440px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .status.off{color:#f0b429}
 .panel{position:fixed;right:14px;bottom:60px;width:320px;background:#171b28;border:1px solid #e35d5d;border-radius:8px;padding:10px 12px;box-shadow:0 4px 16px rgba(0,0,0,.5);pointer-events:auto;display:none}
 .panel.show{display:block}
-.panel h4{margin:0 0 6px;color:#e35d5d;font-size:11px}
+.panel h4{margin:0 0 6px;color:#e8ecf5;font-size:12px;font-weight:400}
+.panel h4 .mark{color:#e35d5d;margin-right:4px}
 .els{max-height:110px;overflow:auto;margin-bottom:8px;color:#aab6d0;font-size:11px}
 .els div{display:flex;justify-content:space-between;gap:6px;word-break:break-all}
 .els .missing{color:#f0b429}
-.els button{padding:0 6px}
 textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;background:#0e111a;border:1px solid #3a4a72;border-radius:4px;padding:4px 6px;margin-bottom:8px}
 .row{display:flex;justify-content:flex-end;gap:6px;align-items:center}
 .row .send{color:#fff;background:#e35d5d;border-color:#e35d5d;font-weight:700}
 .row .send:disabled{opacity:.4;cursor:not-allowed}
 .tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}
-.tabs button.on{background:#232c42;color:#fff}
-.hist{margin-top:8px;border-top:1px solid #262e47;padding-top:6px;max-height:120px;overflow:auto;font-size:11px;color:#8291b0}
-.hist div{display:flex;justify-content:space-between;gap:6px}
+.tabs button.on{background:#3a4a72;border-color:#9db8ef;color:#fff}
+.hist{margin-top:8px;border-top:1px solid #262e47;padding-top:6px;max-height:140px;overflow:auto;font-size:12px;color:#aab6d0}
+.hist .hist-title{color:#8291b0;font-size:11px;margin-bottom:4px}
+.hist .item{display:flex;justify-content:space-between;gap:6px;align-items:flex-start;padding:4px 0;border-bottom:1px solid #1f2740}
+.hist .item:last-child{border-bottom:0}
+.hist .badge{display:inline-block;border-radius:3px;padding:0 4px;margin-right:4px;font-size:10px;color:#0e111a}
+.hist .b-done{background:#4fd18b}
+.hist .b-sent{background:#f0b429}
+.hist .b-unanswered{background:#8291b0}
+.hist .sum{display:block;color:#8291b0;font-size:11px;margin-top:2px}
 .flash{position:fixed;border:2px solid #4fd18b;border-radius:2px;pointer-events:none;animation:cobroflash 1.6s ease-out forwards}
 @keyframes cobroflash{0%{opacity:1}100%{opacity:0}}
 /* shadow root\uC758 \uC790\uC2DD\uC740 \uBAA8\uB450 position:fixed \uD615\uC81C \u2014 picker\uAC00 glass\uB97C toolbar/panel \uB4A4\uC5D0 append\uD558\uBBC0\uB85C \uC313\uC784 \uC21C\uC11C\uB97C \uBA85\uC2DC\uD55C\uB2E4 */
@@ -44,6 +60,7 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
     done: (t) => "\uC644\uB8CC" + (t ? ": " + t : "")
   };
   var BATCH_STATUS = { draft: "\uCD08\uC548", sent: "\uC804\uC1A1\uB428", done: "\uCC98\uB9AC\uB428", unanswered: "\uC751\uB2F5 \uC5C6\uC74C" };
+  var DOT_TITLE = { idle: "\uC5D0\uC774\uC804\uD2B8 \uBBF8\uC5F0\uACB0", waiting: "\uD53C\uB4DC\uBC31 \uB300\uAE30 \uC911", sent: "\uC804\uC1A1\uB428 \u2014 \uC5D0\uC774\uC804\uD2B8 \uC751\uB2F5 \uB300\uAE30", working: "\uC218\uC815 \uC911", done: "\uC644\uB8CC" };
   function createUI(h) {
     const host = document.createElement("div");
     host.setAttribute("data-cobro-host", "");
@@ -55,12 +72,17 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
     toolbar.className = "toolbar";
     const selectBtn = document.createElement("button");
     selectBtn.textContent = "Select";
+    selectBtn.title = "\uC694\uC18C \uC120\uD0DD \uBAA8\uB4DC (Ctrl+Shift+F)";
     selectBtn.onclick = () => h.onToggleSelect();
+    const dot = document.createElement("span");
+    dot.className = "dot";
+    dot.textContent = "\u25CF";
     const status = document.createElement("span");
     status.className = "status";
     const collapseBtn = document.createElement("button");
     collapseBtn.textContent = "Collapse";
-    toolbar.append(selectBtn, status, collapseBtn);
+    collapseBtn.title = "\uD328\uB110 \uC811\uAE30 / \uD3BC\uCE58\uAE30";
+    toolbar.append(selectBtn, dot, status, collapseBtn);
     const panel = document.createElement("div");
     panel.className = "panel";
     root.append(style, toolbar, panel);
@@ -109,29 +131,45 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
       const wasTa = active instanceof HTMLTextAreaElement ? active : null;
       const sel = wasTa ? [wasTa.selectionStart, wasTa.selectionEnd] : null;
       selectBtn.classList.toggle("on", vm.selecting);
-      status.textContent = vm.connected ? STATUS_TEXT[vm.agent.status](vm.agent.text) + (vm.strategy ? ` \xB7 \uAC31\uC2E0: ${vm.strategy}` : "") : "\uC5F0\uACB0 \uB04A\uAE40 \u2014 \uC7AC\uC5F0\uACB0 \uC911";
+      const cur = vm.drafts.find((b) => b.id === vm.current) ?? vm.drafts[vm.drafts.length - 1];
+      const hasElements = !!cur && cur.elements.length > 0;
+      const suffix = vm.strategy ? ` \xB7 \uAC31\uC2E0: ${vm.strategy}` : "";
+      let hint;
+      if (!vm.connected) hint = "\uC5F0\uACB0 \uB04A\uAE40 \u2014 \uC7AC\uC5F0\uACB0 \uC911";
+      else if (vm.agent.status === "sent" || vm.agent.status === "working" || vm.agent.status === "done") hint = STATUS_TEXT[vm.agent.status](vm.agent.text) + suffix;
+      else if (hasElements && cur.note.trim() !== "") hint = "Send\uB85C \uC804\uC1A1\uD558\uC138\uC694" + suffix;
+      else if (vm.selecting && !hasElements) hint = "\uD398\uC774\uC9C0\uC5D0\uC11C \uC694\uC18C\uB97C \uD074\uB9AD\uD558\uC138\uC694 \xB7 Esc\uB85C \uD574\uC81C" + suffix;
+      else if (vm.selecting) hint = `\uC694\uC18C ${cur.elements.length}\uAC1C \uC120\uD0DD \xB7 \uB354 \uACE0\uB974\uAC70\uB098 \uBA54\uBAA8\uB97C \uC801\uC73C\uC138\uC694` + suffix;
+      else if (hasElements) hint = "\uBA54\uBAA8\uB97C \uC801\uACE0 Send\uB97C \uB204\uB974\uC138\uC694" + suffix;
+      else hint = "Ctrl+Shift+F \uB610\uB294 Select\uB85C \uC694\uC18C\uB97C \uACE0\uB974\uC138\uC694" + suffix;
+      status.textContent = hint;
       status.classList.toggle("off", !vm.connected);
+      dot.className = vm.connected ? "dot " + vm.agent.status : "dot";
+      dot.title = vm.connected ? DOT_TITLE[vm.agent.status] : "\uC5F0\uACB0 \uB04A\uAE40 \u2014 \uC7AC\uC5F0\uACB0 \uC911";
       const show = !collapsed && (vm.drafts.length > 0 || vm.history.length > 0);
       panel.classList.toggle("show", show);
       if (!show) return;
       panel.textContent = "";
-      const cur = vm.drafts.find((b) => b.id === vm.current) ?? vm.drafts[vm.drafts.length - 1];
       if (vm.drafts.length > 1) {
         const tabs = el("div", "tabs");
         vm.drafts.forEach((b, i) => {
           const t = el("button", b === cur ? "on" : "", `#${i + 1} (${b.elements.length})`);
+          t.title = `\uBB36\uC74C #${i + 1} \xB7 \uC694\uC18C ${b.elements.length}\uAC1C`;
           t.onclick = () => h.onSelectBatch(b.id);
           tabs.append(t);
         });
         panel.append(tabs);
       }
       if (cur) {
-        panel.append(el("h4", "", `\u25AE ${cur.elements.length} elements selected`));
+        const h4 = el("h4");
+        h4.append(el("span", "mark", "\u25AE"), document.createTextNode(cur.elements.length > 0 ? `\uC694\uC18C ${cur.elements.length}\uAC1C \uC120\uD0DD\uB428` : "\uC120\uD0DD\uB41C \uC694\uC18C \uC5C6\uC74C \xB7 \uBA54\uBAA8\uB9CC \uBCF4\uB0B4\uB3C4 \uB429\uB2C8\uB2E4"));
+        panel.append(h4);
         const list = el("div", "els");
         cur.elements.forEach((e, i) => {
           const row2 = el("div", e.missing ? "missing" : "");
           row2.append(el("span", "", `${i + 1}. ${e.selector.split(" > ").pop()}${e.react ? " \xB7 " + e.react.component : ""}${e.missing ? " \xB7 \uC694\uC18C \uC5C6\uC74C" : ""}`));
           const x = el("button", "", "\u2715");
+          x.title = "\uC774 \uC694\uC18C \uBE7C\uAE30";
           x.onclick = () => h.onRemoveElement(cur.id, i);
           row2.append(x);
           list.append(row2);
@@ -150,9 +188,11 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
       }
       const row = el("div", "row");
       const add = el("button", "", "Add batch");
+      add.title = "\uC9C0\uAE08 \uBA54\uBAA8\uB97C \uB450\uACE0 \uC0C8 \uBB36\uC74C \uC2DC\uC791";
       add.onclick = () => h.onAddBatch();
       const send = el("button", "send", "Send");
       send.disabled = vm.locked;
+      send.title = vm.locked ? "\uC5D0\uC774\uC804\uD2B8 \uC751\uB2F5 \uB300\uAE30 \uC911 \u2014 Unlock\uC73C\uB85C \uB2E4\uC2DC \uBCF4\uB0BC \uC218 \uC788\uC2B5\uB2C8\uB2E4" : "\uC120\uD0DD\uD55C \uC694\uC18C\uC640 \uBA54\uBAA8\uB97C \uC5D0\uC774\uC804\uD2B8\uC5D0 \uC804\uC1A1";
       send.onclick = () => h.onSend();
       row.append(add);
       if (vm.locked) {
@@ -165,15 +205,20 @@ textarea{width:100%;height:54px;resize:none;font:inherit;color:#e8ecf5;backgroun
       panel.append(row);
       if (vm.history.length) {
         const hist = el("div", "hist");
+        hist.append(el("div", "hist-title", "\uBCF4\uB0B8 \uC694\uCCAD"));
         for (const b of vm.history.slice(0, 20)) {
-          const r = el("div");
-          r.append(el("span", "", `[${BATCH_STATUS[b.status]}] ${b.note.slice(0, 40)}${b.summary ? " \u2192 " + b.summary.slice(0, 40) : ""}`));
+          const item = el("div", "item");
+          const left = el("span");
+          left.append(el("span", `badge b-${b.status}`, BATCH_STATUS[b.status]), document.createTextNode(b.note.slice(0, 60)));
+          if (b.summary) left.append(el("span", "sum", `\u2192 ${b.summary.slice(0, 60)}`));
+          item.append(left);
           if (b.status === "done" || b.status === "unanswered") {
             const redo = el("button", "", "Redo");
+            redo.title = "\uC774 \uC694\uCCAD \uB2E4\uC2DC \uBCF4\uB0B4\uAE30";
             redo.onclick = () => h.onRedo(b.id);
-            r.append(redo);
+            item.append(redo);
           }
-          hist.append(r);
+          hist.append(item);
         }
         panel.append(hist);
       }

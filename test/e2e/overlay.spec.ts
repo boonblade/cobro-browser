@@ -8,6 +8,7 @@ test('select → note → Send arrives in core.wait with selector, then done fla
   await expect(page.locator(`${HOST} .els`)).toContainText('#target');
   await page.locator(`${HOST} textarea`).fill('버튼 작게');
   const waiting = bridge.core.wait(10_000);
+  await expect(page.locator(`${HOST} .dot`)).toHaveClass(/waiting/);
   await page.locator(`${HOST} button.send`).click();
   const r = await waiting;
   expect(r.status).toBe('sent');
@@ -15,6 +16,7 @@ test('select → note → Send arrives in core.wait with selector, then done fla
   expect(r.payload.batches[0]).toMatchObject({ note: '버튼 작게', elements: [{ selector: '#target', tag: 'button' }] });
   expect(r.payload.page.url).toContain('basic.html');
   await expect(page.locator(`${HOST} .status`)).toContainText('전송됨');
+  await expect(page.locator(`${HOST} .dot`)).toHaveClass(/sent/);
   await expect(page.locator(`${HOST} .els`)).toHaveCount(0); // 보낸 배치가 좀비 draft로 되살아나면 안 된다
   bridge.done({ summary: '폰트 12px', selectors: ['#target'], changedFiles: ['x.tsx'] });
   await expect(page.locator(`${HOST} .status`)).toContainText('완료');
@@ -65,7 +67,7 @@ test('overlay stays above max z-index header and survives a later native dialog'
 
 test('works on a strict-CSP page (bypassCSP context)', async ({ cobroPage: page, bridge }) => {
   await page.goto('http://127.0.0.1:4173/csp.html');
-  await expect(page.locator(`${HOST} .status`)).toContainText('에이전트');
+  await expect(page.locator(`${HOST} .status`)).toContainText('요소를 고르세요');
   await expect.poll(() => bridge.channel.clientCount()).toBe(1);
 });
 
@@ -106,4 +108,19 @@ test('drag-select picks only the top-most fully contained element', async ({ cob
   // 밴드에 완전히 들어온 것 중 최상위만 — 자식 p.desc·#target은 제외된다
   await expect(page.locator(`${HOST} .els div`)).toHaveCount(1);
   await expect(page.locator(`${HOST} .els`)).toContainText('#card');
+});
+
+test('toolbar hint guides the next action', async ({ cobroPage: page }) => {
+  await page.goto('http://127.0.0.1:4173/basic.html');
+  await expect(page.locator(`${HOST} .status`)).toContainText('Ctrl+Shift+F 또는 Select로 요소를 고르세요');
+  await page.locator(`${HOST} button`, { hasText: 'Select' }).click();
+  await expect(page.locator(`${HOST} .status`)).toContainText('페이지에서 요소를 클릭하세요');
+  const b = (await page.locator('#target').boundingBox())!;
+  await page.mouse.move(b.x + 3, b.y + 3);
+  await page.mouse.click(b.x + 3, b.y + 3);
+  await expect(page.locator(`${HOST} .status`)).toContainText('요소 1개 선택');
+  await page.keyboard.press('Escape');
+  await expect(page.locator(`${HOST} .status`)).toContainText('메모를 적고 Send');
+  await page.keyboard.type('x');
+  await expect(page.locator(`${HOST} .status`)).toContainText('Send로 전송하세요');
 });
