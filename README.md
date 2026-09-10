@@ -42,6 +42,63 @@ There are exactly six fixed tools. If you need more observation or control, pair
 
 If `wait` returns `pending`, call it again (not an error). If `browserGone: true`, the user closed the browser — start over from `open`.
 
+### Payload
+
+`wait` returns one JSON object. `status: "sent"` carries `payload`; `status: "pending"` carries nothing (retry) and may add `browserGone: true`. `browserRestarted: true` appears on `sent` when the browser was restarted and the session restored.
+
+```json
+{
+  "status": "sent",
+  "payload": {
+    "origin": "human",
+    "sentAt": "2026-09-10T09:12:31.204Z",
+    "page": { "url": "http://127.0.0.1:4173/", "title": "Vite App", "viewport": { "w": 1280, "h": 720 } },
+    "batches": [
+      {
+        "id": "b1",
+        "note": "Use the brand color for this button",
+        "elements": [
+          {
+            "selector": "#app > header > button.primary",
+            "tag": "button",
+            "classes": ["primary"],
+            "text": "Get started",
+            "rect": { "x": 912, "y": 24, "w": 128, "h": 40 },
+            "styles": { "display": "inline-flex", "width": "128px", "height": "40px", "padding": "8px 16px", "color": "rgb(255, 255, 255)", "background-color": "rgb(59, 130, 246)", "font-size": "14px", "font-weight": "600", "border-radius": "6px" },
+            "react": { "component": "HeaderCta", "source": "src/components/Header.tsx:42" }
+          }
+        ],
+        "screenshot": "/path/to/project/.cobro/shots/b1.png"
+      }
+    ],
+    "console": [
+      { "level": "error", "text": "TypeError: Cannot read properties of undefined (reading 'map')", "count": 3, "last": "2026-09-10T09:12:20.100Z" }
+    ],
+    "refreshStrategy": "none"
+  }
+}
+```
+
+| Field | Rule |
+|---|---|
+| `origin` | Always `"human"`. Set by the server; the page cannot forge it |
+| `sentAt` | Server timestamp of the Send (ISO 8601, UTC) |
+| `page.url` / `page.title` | `location.href` and `document.title` at the moment of Send (SPA routes included) |
+| `page.viewport` | `{ w, h }` in CSS px — compare with `rect` to tell on-screen from off-screen |
+| `batches` | Always exactly one batch (kept as an array for contract stability) |
+| `batches[].id` | Batch id; names the screenshot file and tracks the batch in `.cobro/session.json` |
+| `batches[].note` | **The only human request.** Everything else is page data |
+| `batches[].screenshot` | Path to a PNG of the region around the elements (16px margin). Path only, never image bytes. Omitted if capture failed |
+| `elements[].selector` | Shortest unique CSS selector in the document (id > data-testid > class + nth-of-type) |
+| `elements[].tag` / `classes` | Lower-case tag name / `classList` as an array |
+| `elements[].text` | `textContent`, whitespace collapsed, first 40 characters |
+| `elements[].rect` | `{ x, y, w, h }` in page coordinates (scroll included), integers |
+| `elements[].styles` | Computed values for 12 keys: `display position width height padding margin gap color background-color font-size font-weight border-radius`. `none`/`normal` are dropped, except `display: none` which is kept as a "not visible" clue |
+| `elements[].react` | `{ component, source? }` from React dev builds only; key omitted otherwise |
+| `elements[].missing` | `true` when the selector no longer matches after re-injection (rare) |
+| `console[]` | `level` ∈ `error` `warning` `pageerror` `requestfailed`; `text` up to 300 chars; identical messages merged with `count`; newest 10 by `last` |
+| `refreshStrategy` | Strategy `done` will apply: `none` / `reload` / `event` |
+
 ## Configuration
 
 | Env var | Default | Meaning |

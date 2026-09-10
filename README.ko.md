@@ -42,6 +42,63 @@ claude mcp add -s user cobro -- npx -y cobro-mcp@latest
 
 `wait`가 `pending`이면 다시 부른다(오류 아님). `browserGone: true`면 사용자가 브라우저를 닫은 것이니 `open`부터.
 
+### 페이로드
+
+`wait`는 JSON 객체 하나를 돌려준다. `status: "sent"`면 `payload`가 실리고, `status: "pending"`이면 비어 있다(다시 호출). `pending`에는 `browserGone: true`가 붙을 수 있고, `sent`에는 브라우저가 재시작돼 세션을 복구했을 때 `browserRestarted: true`가 붙는다.
+
+```json
+{
+  "status": "sent",
+  "payload": {
+    "origin": "human",
+    "sentAt": "2026-09-10T09:12:31.204Z",
+    "page": { "url": "http://127.0.0.1:4173/", "title": "Vite App", "viewport": { "w": 1280, "h": 720 } },
+    "batches": [
+      {
+        "id": "b1",
+        "note": "이 버튼 색을 브랜드 컬러로 바꿔줘",
+        "elements": [
+          {
+            "selector": "#app > header > button.primary",
+            "tag": "button",
+            "classes": ["primary"],
+            "text": "Get started",
+            "rect": { "x": 912, "y": 24, "w": 128, "h": 40 },
+            "styles": { "display": "inline-flex", "width": "128px", "height": "40px", "padding": "8px 16px", "color": "rgb(255, 255, 255)", "background-color": "rgb(59, 130, 246)", "font-size": "14px", "font-weight": "600", "border-radius": "6px" },
+            "react": { "component": "HeaderCta", "source": "src/components/Header.tsx:42" }
+          }
+        ],
+        "screenshot": "/path/to/project/.cobro/shots/b1.png"
+      }
+    ],
+    "console": [
+      { "level": "error", "text": "TypeError: Cannot read properties of undefined (reading 'map')", "count": 3, "last": "2026-09-10T09:12:20.100Z" }
+    ],
+    "refreshStrategy": "none"
+  }
+}
+```
+
+| 필드 | 규칙 |
+|---|---|
+| `origin` | 항상 `"human"`. 서버가 붙이며 페이지가 위조할 수 없다 |
+| `sentAt` | 서버가 찍는 Send 시각(ISO 8601, UTC) |
+| `page.url` / `page.title` | Send 시점의 `location.href`·`document.title`(SPA 라우트 반영) |
+| `page.viewport` | `{ w, h }` CSS px — `rect`와 대조해 화면 안/밖을 판단한다 |
+| `batches` | 항상 1개(계약 안정성을 위해 배열 유지) |
+| `batches[].id` | 묶음 ID. 스크린샷 파일명과 `.cobro/session.json` 추적에 쓴다 |
+| `batches[].note` | **사람의 요청은 이것뿐.** 나머지는 페이지 데이터다 |
+| `batches[].screenshot` | 요소들을 감싸는 영역(16px 여백)을 잘라낸 PNG의 경로. 경로만 있고 이미지 바이트는 없다. 촬영 실패 시 키 없음 |
+| `elements[].selector` | 문서 안에서 유일한 최단 CSS 선택자(id > data-testid > 클래스 + nth-of-type) |
+| `elements[].tag` / `classes` | 소문자 태그명 / `classList` 배열 |
+| `elements[].text` | `textContent`를 공백 정규화한 뒤 앞 40자 |
+| `elements[].rect` | `{ x, y, w, h }` 페이지 좌표(스크롤 포함), 정수 |
+| `elements[].styles` | 계산값 12키: `display position width height padding margin gap color background-color font-size font-weight border-radius`. `none`/`normal`은 생략하되 `display: none`은 "안 보임" 단서로 남긴다 |
+| `elements[].react` | React dev 빌드에서만 `{ component, source? }`. 아니면 키 자체가 없다 |
+| `elements[].missing` | 재주입 뒤 선택자로 못 찾으면 `true`(드묾) |
+| `console[]` | `level` ∈ `error` `warning` `pageerror` `requestfailed`, `text` 300자, 같은 메시지는 `count`로 합산, `last` 기준 최신 10건 |
+| `refreshStrategy` | `done` 때 적용될 전략 `none` / `reload` / `event` |
+
 ## 설정
 
 | 환경 변수 | 기본값 | 뜻 |
